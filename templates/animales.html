@@ -1,1 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
 
+<style>
+.animal-form, .animal-table {
+    background: #f5e8d8;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bca58b;
+    margin-bottom: 12px;
+}
+
+.btn {
+    background: #8b5e3c;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+.btn:hover {
+    background: #6b452e;
+}
+
+img.animal-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+</style>
+
+<h2>🐄 Gestión de Animales</h2>
+
+<!-- FORMULARIO -->
+<div class="animal-form">
+    <h3>Registrar / Modificar Animal</h3>
+
+    <form method="POST" enctype="multipart/form-data" id="animalForm">
+
+        <input type="hidden" name="pk" id="pk">
+
+        <label>Nombre:</label>
+        <input type="text" name="nombre" id="nombre" required>
+
+        <label>Fecha de nacimiento:</label>
+        <input type="date" name="fecha" id="fecha" required>
+
+        <label>Cruze:</label>
+        <input type="text" name="cruze" id="cruze">
+
+        <!-- SELECT DE PRODUCTOR -->
+        <label>Productor:</label>
+        <select name="fk_productor" id="fk_productor">
+            <option value="">Seleccione...</option>
+            {% for p in productores %}
+            <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- SELECT DE RAZA -->
+        <label>Raza:</label>
+        <select name="fk_raza" id="fk_raza">
+            <option value="">Seleccione...</option>
+            {% for r in razas %}
+            <option value="{{ r[0] }}">{{ r[0] }} - {{ r[1] }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Foto perfil:</label>
+        <input type="file" name="foto_perfil" accept="image/*">
+
+        <label>Foto lateral:</label>
+        <input type="file" name="foto_lateral" accept="image/*">
+
+        <button class="btn" name="accion" value="registrar">Registrar</button>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="animal-table">
+    <h3>Animales Registrados</h3>
+
+    <table border="1" width="100%" cellpadding="6">
+        <tr style="background:#d8c2a8;">
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Fecha</th>
+            <th>Cruze</th>
+            <th>Productor</th>
+            <th>Raza</th>
+            <th>Foto Perfil</th>
+            <th>Foto Lateral</th>
+            <th>Acciones</th>
+        </tr>
+
+        {% for a in animales %}
+        <tr>
+            <td>{{ a[0] }}</td>
+            <td>{{ a[1] }}</td>
+            <td>{{ a[2] }}</td>
+            <td>{{ a[3] }}</td>
+            <td>{{ a[4] }}</td>
+            <td>{{ a[5] }}</td>
+
+            <td>
+                <img class="animal-img" 
+                     src="{{ url_for('imagen_animal', id=a[0], tipo='foto_perfil') }}"
+                     onerror="this.style.display='none'">
+            </td>
+
+            <td>
+                <img class="animal-img" 
+                     src="{{ url_for('imagen_animal', id=a[0], tipo='foto_lateral') }}"
+                     onerror="this.style.display='none'">
+            </td>
+
+            <!-- BOTONES DE ACCIÓN -->
+            <td>
+                <button class="btn btn-small" 
+                        onclick="cargarFormulario('{{ a[0] }}','{{ a[1] }}','{{ a[2] }}','{{ a[3] }}','{{ a[4] }}','{{ a[5] }}')">
+                    Modificar
+                </button>
+
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="pk" value="{{ a[0] }}">
+                    <button class="btn btn-small" name="accion" value="eliminar"
+                            style="background:#a63c3c;">
+                        Eliminar
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+function cargarFormulario(id, nombre, fecha, cruze, productor, raza) {
+    document.getElementById("pk").value = id;
+    document.getElementById("nombre").value = nombre;
+    document.getElementById("fecha").value = fecha;
+    document.getElementById("cruze").value = cruze;
+    document.getElementById("fk_productor").value = productor;
+    document.getElementById("fk_raza").value = raza;
+
+    // Cambiar botón principal a "Modificar"
+    let form = document.getElementById("animalForm");
+
+    let existing = document.getElementById("btnModificar");
+    if (!existing) {
+        let btn = document.createElement("button");
+        btn.innerText = "Modificar";
+        btn.className = "btn";
+        btn.name = "accion";
+        btn.value = "modificar";
+        btn.id = "btnModificar";
+        form.appendChild(btn);
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+
+{% endblock %}

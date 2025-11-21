@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <h3 class="text-center mb-3">Registrar usuario</h3>
+
+        <form method="POST" class="card p-4 shadow">
+
+            <img src="{{ url_for('static', filename='img/new.png') }}" class="img-fluid mb-3">
+
+            <label>Usuario:</label>
+            <input type="text" name="usuario" class="form-control mb-3" required>
+
+            <label>Contraseña:</label>
+            <input type="password" name="password" class="form-control mb-3" required>
+
+            <label>Tipo de usuario:</label>
+            <div class="d-flex gap-3 mb-3">
+                <label><input type="radio" name="rol" value="Veterinario"> Veterinario</label>
+                <label><input type="radio" name="rol" value="Productor"> Productor</label>
+                <label><input type="radio" name="rol" value="Comprador"> Comprador</label>
+            </div>
+
+            <button class="btn btn-success w-100">Registrar</button>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

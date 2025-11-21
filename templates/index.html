@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="text-center">
+    <img src="{{ url_for('static', filename='img/banner.png') }}" class="img-fluid mb-4" style="max-height:200px">
+
+    <h1 class="text-primary fw-bold">Bienvenido a GANA_CONTROL</h1>
+    <p class="fs-5 text-secondary">Sistema integral de gestión ganadera</p>
+
+    <p class="mt-4">
+        GANA_CONTROL es una herramienta diseñada para optimizar la administración ganadera.
+        Permite registrar animales, gestionar alimentación, ventas y trazabilidad en una base de datos centralizada.
+    </p>
+
+    <img src="{{ url_for('static', filename='img/principal.png') }}" class="img-fluid mt-4" style="max-width:600px">
+</div>
+
+{% endblock %}

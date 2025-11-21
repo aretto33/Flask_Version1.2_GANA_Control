@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    /* Ajuste del banner */
+    .banner {
+        width: 100%;
+        max-width: 900px; /* evita que se haga gigante */
+        height: auto;
+        display: block;
+        margin: 20px auto;
+        border-radius: 12px;
+    }
+
+    /* Opcional: ajusta el contenedor principal */
+    .contenido {
+        max-width: 1000px;
+        margin: auto;
+    }
+</style>
+
+<div class="dashboard">
+
+    <!-- Panel lateral -->
+    <div class="sidebar">
+        <a href="{{ url_for('animales') }}">Animales</a>
+        <a href="{{ url_for('predios') }}">Predios</a>
+        <a href="{{ url_for('productor') }}">Productor</a>
+        <a href="{{ url_for('pesajes') }}">Pesaje</a>
+        <a href="{{ url_for('siniga') }}">Registro SINIGA</a>
+        <a href="{{ url_for('seguimiento') }}">Seg. Veterinario</a>
+        <a href="{{ url_for('ventas') }}">Venta</a>
+        <a href="{{ url_for('razas') }}">Razas</a>
+    </div>
+
+    <!-- Panel central -->
+    <div class="contenido">
+
+        <h2 class="bienvenido">🐮 Bienvenido {{ usuario }} ({{ rol }})</h2>
+
+        <img src="{{ url_for('static', filename='img/banner.png') }}" class="banner">
+
+        <h1 class="titulo">Trámites</h1>
+
+        <div class="tramites">
+            <a class="btn" href="{{ url_for('upp') }}">Inscripción UPP</a>
+            <a class="btn" href="#">Trámites Datos</a>
+            <a class="btn" href="#">Trámite 3</a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
