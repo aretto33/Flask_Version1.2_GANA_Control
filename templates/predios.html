@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.animal-form, .animal-table {
+    background: #f5e8d8;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bca58b;
+    margin-bottom: 12px;
+}
+
+.btn {
+    background: #8b5e3c;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+.btn:hover {
+    background: #6b452e;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+</style>
+
+<h2>Gestión de Predios</h2>
+
+<!-- FORMULARIO -->
+<div class="animal-form">
+    <h3>Registrar / Modificar Predio</h3>
+
+    <form method="POST" id="predioForm">
+
+        <input type="hidden" name="pk" id="pk">
+
+        <label>Dirección:</label>
+        <input type="text" name="direccion" id="direccion" required>
+
+        <label>Estado:</label>
+        <input type="text" name="estado" id="estado" required>
+
+        <label>Municipio:</label>
+        <input type="text" name="municipio" id="municipio" required>
+
+        <!-- SELECT DE PRODUCTOR -->
+        <label>Productor:</label>
+        <select name="fk_productor" id="fk_productor">
+            <option value="">Seleccione...</option>
+            {% for p in productores %}
+            <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="btn" name="accion" value="registrar">Registrar</button>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="animal-table">
+    <h3>Predios Registrados</h3>
+
+    <table border="1" width="100%" cellpadding="6">
+        <thead style="background:#d8c2a8;">
+            <tr>
+                <th>ID</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th>Municipio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for p in predios %}
+        <tr>
+            <td>{{ p[0] }}</td>
+            <td>{{ p[1] }}</td>
+            <td>{{ p[2] }}</td>
+            <td>{{ p[3] }}</td>
+
+            <td>
+                <button class="btn btn-small"
+                        onclick="cargarFormulario('{{ p[0] }}','{{ p[1] }}','{{ p[2] }}','{{ p[3] }}')">
+                    Modificar
+                </button>
+
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="pk" value="{{ p[0] }}">
+                    <button class="btn btn-small" name="accion" value="eliminar"
+                            style="background:#a63c3c;">
+                        Eliminar
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function cargarFormulario(id, direccion, estado, municipio) {
+    document.getElementById("pk").value = id;
+    document.getElementById("direccion").value = direccion;
+    document.getElementById("estado").value = estado;
+    document.getElementById("municipio").value = municipio;
+
+    // Cambiar botón principal a "Modificar"
+    let form = document.getElementById("predioForm");
+
+    let existing = document.getElementById("btnModificar");
+    if (!existing) {
+        let btn = document.createElement("button");
+        btn.innerText = "Modificar";
+        btn.className = "btn";
+        btn.name = "accion";
+        btn.value = "modificar";
+        btn.id = "btnModificar";
+        form.appendChild(btn);
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+
+{% endblock %}

@@ -4,25 +4,31 @@
     <meta charset="UTF-8">
     <title>{{ title or 'GANA_CONTROL' }}</title>
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Estilos propios -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
 <body class="bg-light">
 
-    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
-        <a class="navbar-brand" href="{{ url_for('inicio') }}">🐄 GANA_CONTROL</a>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('inicio') }}">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                alt="GANA_CONTROL" 
+                style="height:60px; width:auto;">
+            <span>GANA_CONTROL®</span>
+        </a>
+
+
 
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav ms-auto">
 
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('inicio') }}">Inicio</a></li>
+
+                {% if not session.get('usuario') %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Iniciar sesión</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Registrar</a></li>
+                {% endif %}
 
                 {% if session.get('usuario') %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Panel</a></li>
@@ -32,7 +38,6 @@
         </div>
     </nav>
 
-    <!-- CONTENIDO -->
     <div class="container mt-4">
         {% with mensajes = get_flashed_messages(with_categories=true) %}
             {% if mensajes %}

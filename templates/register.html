@@ -2,7 +2,7 @@
 {% block content %}
 
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-md-8">
 
         <h3 class="text-center mb-3">Registrar usuario</h3>
 
@@ -10,6 +10,7 @@
 
             <img src="{{ url_for('static', filename='img/new.png') }}" class="img-fluid mb-3">
 
+            <!-- DATOS DE USUARIO -->
             <label>Usuario:</label>
             <input type="text" name="usuario" class="form-control mb-3" required>
 
@@ -17,10 +18,27 @@
             <input type="password" name="password" class="form-control mb-3" required>
 
             <label>Tipo de usuario:</label>
-            <div class="d-flex gap-3 mb-3">
-                <label><input type="radio" name="rol" value="Veterinario"> Veterinario</label>
-                <label><input type="radio" name="rol" value="Productor"> Productor</label>
-                <label><input type="radio" name="rol" value="Comprador"> Comprador</label>
+            <div class="d-flex gap-4 mb-3">
+                <label><input type="radio" name="rol" value="Veterinario" onclick="mostrarFormProductor(false)"> Veterinario</label>
+                <label><input type="radio" name="rol" value="Productor" onclick="mostrarFormProductor(true)"> Productor</label>
+                <label><input type="radio" name="rol" value="Comprador" onclick="mostrarFormProductor(false)"> Comprador</label>
+            </div>
+
+            <!-- FORMULARIO EXTRA PARA PRODUCTOR -->
+            <div id="formProductor" class="border rounded p-3 mb-3" style="display: none; background: #f9f9f9;">
+                <h5>Datos del Productor</h5>
+
+                <label>Nombre del productor:</label>
+                <input type="text" name="prod_nombre" class="form-control mb-2">
+
+                <label>Dirección:</label>
+                <input type="text" name="prod_direccion" class="form-control mb-2">
+
+                <label>Teléfono:</label>
+                <input type="text" name="prod_telefono" class="form-control mb-2">
+
+                <label>Correo electrónico:</label>
+                <input type="email" name="prod_email" class="form-control mb-2">
             </div>
 
             <button class="btn btn-success w-100">Registrar</button>
@@ -28,5 +46,11 @@
 
     </div>
 </div>
+
+<script>
+    function mostrarFormProductor(mostrar) {
+        document.getElementById("formProductor").style.display = mostrar ? "block" : "none";
+    }
+</script>
 
 {% endblock %}
