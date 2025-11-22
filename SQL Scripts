@@ -1,269 +1,136 @@
-SHOW DATABASES;
-DROP DATABASE Proyecto_Ganaderia;
-CREATE DATABASE IF NOT EXISTS Proyecto_Ganaderia;
-USE Proyecto_Ganadaria;
---Un dato escencial es el registro de productor ya que al comprar o nacer un bovino, el productor es el responsable de su registro oficial
-CREATE TABLE Productores (
-  pk_productor INT PRIMARY KEY AUTO_INCREMENT,
-  nombre VARCHAR(255),
-  apellido_pat VARCHAR(255),
-  apellido_mat VARCHAR(255),
-  fk_predio INT,
-  FOREIGN KEY (fk_predio) REFERENCES Predios(pk_predio)
-);
---Predios, se registra el o los terrenos del propietario ya que es dato importante a la hora de mover un bovino o venderlo
-CREATE TABLE Predios(
-  pk_predio INT PRIMARY KEY AUTO_INCREMENT,
-  direccion VARCHAR(255),
-  estado VARCHAR(100) NOT NULL,
-  municipio VARCHAR(100) NOT NULL
-);
--- Se crea una tabla de referencias de razas que se manejen para así relacionarla con el animal
-CREATE TABLE Razas (
-  pk_raza INT PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL UNIQUE,
-  origen VARCHAR(100) DEFAULT 'Sin registro',
-  color VARCHAR(100) DEFAULT 'Sin definir'
-);
+--Estructura de la base de datos 
 
--- Son alguno  de los datos más relevantes del animal que lograrán mejorar un registro más detallado
-CREATE TABLE Animales (
-  pk_animal INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
-  fecha_nacimiento DATE NOT NULL,
-  cruze TEXT NOT NULL DEFAULT 'Sin conocer',
-  foto_perfil MEDIUMBLOB,
-  foto_lateral MEDIUMBLOB,
-  fk_productor INT,
-  fk_raza INT,
-  FOREIGN KEY (fk_productor) REFERENCES Productores(pk_productor),
-  FOREIGN KEY (fk_raza) REFERENCES Razas(pk_raza)
-);
---registro de salud de el animal para saber con exactitud que medicamentos o tratamientos tiene
-CREATE TABLE Seguimiento_vet (
-  pk_segui_vet INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  fk_animal INT,
-  tipo_tratamiento TEXT NOT NULL DEFAULT 'Chequeo',
-  fecha_actual DATE NOT NULL,
-  prox_fecha DATE,
-  FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal)
-);
+MariaDB [(none)]> USE Proyecto_Ganaderia;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
 
--- Registro oficial ante la ley y entidades federativas
-CREATE TABLE Registro_SINIGA (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    UPP INT NOT NULL,
-    fk_animal INT UNIQUE,
-    arete VARCHAR(100) NOT NULL,
-    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal)
-);
---Es importante saber el peso ya que es un factor de importancia a la hora de hacer una venta
-CREATE TABLE Pesajes (
-    pk_pesaje INT AUTO_INCREMENT PRIMARY KEY,
-    pesaje FLOAT NOT NULL,
-    fecha DATE NOT NULL,
-    fk_animal INT,
-    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal)
-);
---Ventas de el animal
-CREATE TABLE Ventas (
-    pk_venta INT AUTO_INCREMENT PRIMARY KEY,
-    fk_animal INT,
-    fk_pesaje INT,
-    clave VARCHAR(50) NOT NULL,
-    precio DECIMAL(10,2) NOT NULL,
-    fecha_venta DATE NOT NULL,
-    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal),
-    FOREIGN KEY (fk_pesaje) REFERENCES Pesajes(pk_pesaje)
-);
+Database changed
+MariaDB [Proyecto_Ganaderia]> SHOW TABLES;
++------------------------------+
+| Tables_in_Proyecto_Ganaderia |
++------------------------------+
+| Animales                     |
+| Pesajes                      |
+| Predios                      |
+| Productores                  |
+| Razas                        |
+| Registro_SINIGA              |
+| Seguimiento_vet              |
+| Ventas                       |
+| usuarios                     |
++------------------------------+
+9 rows in set (0.001 sec)
+---ESTRUCTURA DE CADA TABLA
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Animales;
++------------------+---------------+------+-----+---------------+----------------+
+| Field            | Type          | Null | Key | Default       | Extra          |
++------------------+---------------+------+-----+---------------+----------------+
+| pk_animal        | int(11)       | NO   | PRI | NULL          | auto_increment |
+| nombre           | varchar(100)  | NO   |     | NULL          |                |
+| fecha_nacimiento | date          | NO   |     | NULL          |                |
+| cruze            | text          | NO   |     | 'Sin conocer' |                |
+| foto_perfil      | mediumblob    | YES  |     | NULL          |                |
+| foto_lateral     | mediumblob    | YES  |     | NULL          |                |
+| fk_productor     | int(11)       | YES  | MUL | NULL          |                |
+| fk_raza          | int(11)       | YES  | MUL | NULL          |                |
+| sexo             | enum('M','H') | NO   |     | NULL          |                |
+| peso_actual      | float         | YES  |     | NULL          |                |
++------------------+---------------+------+-----+---------------+----------------+
+10 rows in set (0.007 sec)
 
-ALTER TABLE Razas DROP PRIMARY KEY;
-describe Razas;
-ALTER TABLE Razas 
-MODIFY pk_raza INT AUTO_INCREMENT PRIMARY KEY;
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Predios;
++--------------+--------------+------+-----+---------+----------------+
+| Field        | Type         | Null | Key | Default | Extra          |
++--------------+--------------+------+-----+---------+----------------+
+| pk_predio    | int(11)      | NO   | PRI | NULL    | auto_increment |
+| direccion    | varchar(255) | YES  |     | NULL    |                |
+| estado       | varchar(100) | NO   |     | NULL    |                |
+| municipio    | varchar(100) | NO   |     | NULL    |                |
+| fk_productor | int(11)      | NO   | MUL | NULL    |                |
++--------------+--------------+------+-----+---------+----------------+
+5 rows in set (0.003 sec)
 
+MariaDB [Proyecto_Ganaderia]> Describe Productores;
++--------------+--------------+------+-----+-------------+----------------+
+| Field        | Type         | Null | Key | Default     | Extra          |
++--------------+--------------+------+-----+-------------+----------------+
+| pk_productor | int(11)      | NO   | PRI | NULL        | auto_increment |
+| nombre       | varchar(255) | YES  |     | NULL        |                |
+| apellido_pat | varchar(255) | YES  |     | NULL        |                |
+| apellido_mat | varchar(255) | YES  |     | NULL        |                |
+| UPP          | varchar(50)  | YES  |     | No inscrito |                |
+| RFC          | varchar(50)  | YES  | UNI | NULL        |                |
++--------------+--------------+------+-----+-------------+----------------+
+6 rows in set (0.007 sec)
 
---Operaciones de insert a todas las tablas
--- Predios
-INSERT INTO Predios (direccion, estado, municipio) VALUES
-('Rancho El Paraíso', 'Tabasco', 'Centro'),
-('Granja La Esperanza', 'Tabasco', 'Comalcalco'),
-('Hacienda Los Mangos', 'Tabasco', 'Cárdenas');
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Pesajes; 
++-----------+---------+------+-----+---------+----------------+
+| Field     | Type    | Null | Key | Default | Extra          |
++-----------+---------+------+-----+---------+----------------+
+| pk_pesaje | int(11) | NO   | PRI | NULL    | auto_increment |
+| pesaje    | float   | NO   |     | NULL    |                |
+| fecha     | date    | NO   |     | NULL    |                |
+| fk_animal | int(11) | YES  | MUL | NULL    |                |
++-----------+---------+------+-----+---------+----------------+
+4 rows in set (0.004 sec)
 
--- Productores
-INSERT INTO Productores (nombre, apellido_pat, apellido_mat, fk_predio) VALUES
-('José', 'Hernández', 'López', 1),
-('María', 'Pérez', 'Ramírez', 2),
-('Luis', 'Gómez', 'Castillo', 3);
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Razas;
++---------+--------------+------+-----+--------------+----------------+
+| Field   | Type         | Null | Key | Default      | Extra          |
++---------+--------------+------+-----+--------------+----------------+
+| pk_raza | int(11)      | NO   | PRI | NULL         | auto_increment |
+| nombre  | varchar(100) | NO   | UNI | NULL         |                |
+| origen  | varchar(100) | NO   |     | Sin registro |                |
+| color   | varchar(100) | YES  |     | Sin definir  |                |
++---------+--------------+------+-----+--------------+----------------+
+4 rows in set (0.004 sec)
 
--- Razas
-INSERT INTO Razas (nombre, origen, color) VALUES
-('Siboney de Cuba', 'Cuba', 'Rojo y Blanco'),
-('Indobrasil', 'Brasil', 'Gris'),
-('Gyr', 'India', 'Rojo');
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Registro_SINIGA;
++-----------+--------------+------+-----+---------+----------------+
+| Field     | Type         | Null | Key | Default | Extra          |
++-----------+--------------+------+-----+---------+----------------+
+| id        | int(11)      | NO   | PRI | NULL    | auto_increment |
+| fk_animal | int(11)      | YES  | UNI | NULL    |                |
+| arete     | varchar(100) | NO   |     | NULL    |                |
++-----------+--------------+------+-----+---------+----------------+
+3 rows in set (0.005 sec)
 
--- Animales
-INSERT INTO Animales (nombre, fecha_nacimiento, cruze, fk_productor, fk_raza) VALUES
-('Lucero', '2022-05-10', 'Siboney', 1, 1),
-('Tigre', '2021-11-20', 'Indobrasil', 2, 2),
-('Paloma', '2023-02-15', 'Gyr', 3, 3);
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Seguimiento_vet ;
++------------------+---------+------+-----+-----------+----------------+
+| Field            | Type    | Null | Key | Default   | Extra          |
++------------------+---------+------+-----+-----------+----------------+
+| pk_segui_vet     | int(11) | NO   | PRI | NULL      | auto_increment |
+| fk_animal        | int(11) | YES  | MUL | NULL      |                |
+| tipo_tratamiento | text    | NO   |     | 'Chequeo' |                |
+| fecha_actual     | date    | NO   |     | NULL      |                |
+| prox_fecha       | date    | YES  |     | NULL      |                |
++------------------+---------+------+-----+-----------+----------------+
+5 rows in set (0.003 sec)
 
--- Seguimiento veterinario
-INSERT INTO Seguimiento_vet (fk_animal, tipo_tratamiento, fecha_actual, prox_fecha) VALUES
-(1, 'Vitaminas', '2024-09-01', '2025-03-01'),
-(2, 'Desparasitación', '2024-08-15', '2025-02-15'),
-(3, 'Vacunación', '2024-07-20', '2025-01-20');
+MariaDB [Proyecto_Ganaderia]> DESCRIBE Ventas;
++-------------+---------------+------+-----+---------+----------------+
+| Field       | Type          | Null | Key | Default | Extra          |
++-------------+---------------+------+-----+---------+----------------+
+| pk_venta    | int(11)       | NO   | PRI | NULL    | auto_increment |
+| fk_animal   | int(11)       | YES  | MUL | NULL    |                |
+| fk_pesaje   | int(11)       | YES  | MUL | NULL    |                |
+| clave       | varchar(50)   | NO   |     | NULL    |                |
+| precio      | decimal(10,2) | NO   |     | NULL    |                |
+| fecha_venta | date          | NO   |     | NULL    |                |
++-------------+---------------+------+-----+---------+----------------+
+6 rows in set (0.003 sec)
 
--- Registro SINIGA
-INSERT INTO Registro_SINIGA (UPP, fk_animal, arete) VALUES
-(201, 1, 'TAB123'),
-(202, 2, 'TAB456'),
-(203, 3, 'TAB789');
+MariaDB [Proyecto_Ganaderia]> DESCRIBE usuarios;
++--------------+--------------+------+-----+---------+----------------+
+| Field        | Type         | Null | Key | Default | Extra          |
++--------------+--------------+------+-----+---------+----------------+
+| id_usuario   | int(11)      | NO   | PRI | NULL    | auto_increment |
+| usuario      | varchar(50)  | NO   | UNI | NULL    |                |
+| password     | varchar(100) | NO   |     | NULL    |                |
+| rol          | varchar(50)  | NO   |     | NULL    |                |
+| fk_productor | int(11)      | YES  | MUL | NULL    |                |
++--------------+--------------+------+-----+---------+----------------+
+5 rows in set (0.003 sec)
 
--- Pesajes
-INSERT INTO Pesajes (pesaje, fecha, fk_animal) VALUES
-(280.0, '2024-08-01', 1),
-(310.5, '2024-08-10', 2),
-(190.3, '2024-08-20', 3);
-
--- Ventas
-INSERT INTO Ventas (fk_animal, fk_pesaje, clave, precio, fecha_venta) VALUES
-(2, 2, 'VENTA_TAB01', 18000.00, '2025-01-05'),
-(1, 1, 'VENTA_TAB02', 22000.00, '2025-02-10');
-
-SHOW TABLES;
-
-DESCRIBE Predios;
-DESCRIBE Productores;
-
-DESCRIBE Razas;
-
-DESCRIBE Animales;
-
-DESCRIBE Seguimiento_vet;
-
-DESCRIBE Registro_SINIGA;
-
-DESCRIBE Pesajes;
-
-DESCRIBE Ventas;
-
-SELECT * FROM Ventas;
---SEELCT 
-UPDATE Predios SET direccion = 'Rancho El Amanecer' WHERE pk_predio = 1;
-UPDATE Productores SET nombre = 'Juan Carlos' WHERE pk_productor = 1;
-UPDATE Razas SET color = 'Manchado' WHERE pk_raza = 1;
-UPDATE Animales SET nombre = 'Luna Nueva' WHERE pk_animal = 1;
-UPDATE Seguimiento_vet SET tipo_tratamiento = 'Chequeo general' WHERE pk_segui_vet = 1;
-UPDATE Registro_SINIGA SET arete = 'ARETE999' WHERE id = 1;
-UPDATE Pesajes SET pesaje = 260.0 WHERE pk_pesaje = 1;
-UPDATE Ventas SET precio = 16000.00 WHERE pk_venta = 1;
-
-
--- DELECT
-DELETE FROM Ventas WHERE pk_venta = 1;
-DELETE FROM Pesajes WHERE pk_pesaje = 2;
-DELETE FROM Registro_SINIGA WHERE id = 2;
-DELETE FROM Seguimiento_vet WHERE pk_segui_vet = 2;
-DELETE FROM Animales WHERE pk_animal = 3;
-DELETE FROM Razas WHERE pk_raza = 3;
-DELETE FROM Productores WHERE pk_productor = 2;
-DELETE FROM Predios WHERE pk_predio = 2;
-
--- Predios
-SELECT * FROM Predios;
-
--- Productores
-SELECT * FROM Productores;
-
--- Razas
-SELECT * FROM Razas;
-
--- Animales
-SELECT * FROM Animales;
-
--- Seguimiento veterinario
-SELECT * FROM Seguimiento_vet;
-
--- Registro SINIGA
-SELECT * FROM Registro_SINIGA;
-
--- Pesajes
-SELECT * FROM Pesajes;
-
--- Ventas
-SELECT * FROM Ventas;
-
---New COLUMN
-DESCRIBE usuarios;
-+------------+--------------+------+-----+---------+----------------+
-| Field      | Type         | Null | Key | Default | Extra          |
-+------------+--------------+------+-----+---------+----------------+
-| id_usuario | int(11)      | NO   | PRI | NULL    | auto_increment |
-| usuario    | varchar(50)  | NO   | UNI | NULL    |                |
-| password   | varchar(100) | NO   |     | NULL    |                |
-| rol        | varchar(50)  | NO   |     | NULL    |                |
-+------------+--------------+------+-----+---------+----------------+
-
-CREATE TABLE usuarios (
-id_usuario INT(11) PRIMARY KEY AUTO_INCREMENT,
-usuario VARCHAR(50) UNIQUE NOT NULL,
-password VARCHAR(100) NOT NULL,
-rol VARCHAR(50) NOT NULL
-);
-
---Triggers
-ALTER TABLE Animales
-ADD COLUMN peso_actual FLOAT DEFAULT NULL;
-
-DROP TRIGGER IF EXISTS actualizar_peso;
-DELIMITER $$
-CREATE TRIGGER actualizar_peso
-AFTER INSERT ON Pesajes
-FOR EACH ROW
-BEGIN
-UPDATE Animales
-SET peso_actual = NEW.pesaje
-WHERE pk_animal = NEW.fk_animal;
-END $$
-DELIMITER ;
-
---Procedure 1
-DELIMITER $$
-
-CREATE OR REPLACE PROCEDURE Datos_reAretado(
-    IN p_nombre VARCHAR(50),
-    IN p_idPredio INT,
-    IN p_idProductor INT
-)
-BEGIN
-    DROP TEMPORARY TABLE IF EXISTS Datos_reAretado_result;
-
-    CREATE TEMPORARY TABLE Datos_reAretado_result AS
-    SELECT
-        a.pk_animal,
-        a.nombre,
-        a.cruze,
-        a.sexo,
-        a.peso_actual,
-        p.pk_productor,
-        CONCAT(p.nombre, ' ', p.apellido_pat, ' ', p.apellido_mat) AS Productor,
-        p.UPP,
-        pr.pk_predio,
-        pr.direccion,
-        pr.estado,
-        pr.municipio
-    FROM Animales a
-    INNER JOIN Productores p ON a.fk_productor = p.pk_productor
-    INNER JOIN Predios pr ON p.fk_predio = pr.pk_predio
-    WHERE a.nombre LIKE CONCAT('%', p_nombre, '%')
-      AND p.pk_productor = p_idProductor
-      AND pr.pk_predio = p_idPredio;
-
-    --  ESTA LÍNEA ES LA QUE FALTABA
-    SELECT * FROM Datos_reAretado_result;
-END $$
-
-DELIMITER ;
-
+MariaDB [Proyecto_Ganaderia]> 
 
