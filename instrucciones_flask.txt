@@ -1,0 +1,111 @@
+
+ INSTRUCCIONES PARA CORRER FLASK
+
+
+1. REQUISITOS
+-------------
+- Python 3.8 o superior
+- pip actualizado
+- Mariadb o MySQL instalado
+- Crear base de datos con las tablas necesarias
+
+
+2. INSTALAR DEPENDENCIAS DEL PROYECTO
+
+
+Ejecutar en terminal dentro del proyecto:
+
+pip install flask
+pip install flask-mysqldb
+pip install mysqlclient
+pip install pymysql
+pip install flask-bcrypt
+pip install flask-session
+
+(Opcional si usas fotos)
+pip install pillow
+
+(Opcional si usarás PDF)
+pip install reportlab
+
+3. ESTRUCTURA DE CARPETAS RECOMENDADA
+
+
+flask_Ganaderia/
+│
+├── app.py
+├── requirements.txt
+│
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── img/
+│
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── login.html
+│   ├── animales.html
+│   ├── predios.html
+│   ├── dashboard.html
+│   └── otros.html
+│
+└── base_datos.sql  (opcional)
+
+
+4. VARIABLES IMPORTANTES EN app.py
+
+
+- ruta de conexión MySQL/MariaDB
+- clave secreta de Flask
+- rutas @app.route(...)
+- manejo de sesiones
+
+Ejemplo conexión:
+
+app.config["MYSQL_HOST"] = "localhost"
+app.config["MYSQL_USER"] = "root"
+app.config["MYSQL_PASSWORD"] = ""
+app.config["MYSQL_DB"] = "Proyecto_Ganaderia"
+app.config["MYSQL_CURSORCLASS"] = "DictCursor"
+
+-------------------------------------------
+5. CÓMO LEVANTAR EL SERVIDOR
+-------------------------------------------
+
+Desde la carpeta del proyecto:
+
+export FLASK_APP=app.py
+export FLASK_ENV=development
+flask run
+
+Si usas Windows (PowerShell):
+
+set FLASK_APP=app.py
+set FLASK_ENV=development
+flask run
+
+
+6. CÓMO EJECUTAR EN MODO PYTHON DIRECTO
+
+
+python app.py
+
+*Debe incluir al final del archivo:*
+if __name__ == "__main__":
+    app.run(debug=True)
+7. ARCHIVO requirements.txt (recomendado)
+
+
+Flask
+Flask-MySQLdb
+mysqlclient
+PyMySQL
+Flask-Bcrypt
+Flask-Session
+Pillow
+ReportLab
+
+-------------------------------------------
+FIN DEL ARCHIVO
+-------------------------------------------
