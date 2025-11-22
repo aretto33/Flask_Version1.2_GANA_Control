@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
 import mariadb
 
 app = Flask(__name__)
@@ -26,14 +26,18 @@ def verificar_credenciales(usuario, password, rol):
         return False, "Error de conexión"
 
     try:
-        sql = "SELECT usuario, password, rol FROM usuarios WHERE usuario=%s AND rol=%s"
+        sql = """
+        SELECT id_usuario, usuario, password, rol, fk_productor
+        FROM usuarios 
+        WHERE usuario=%s AND rol=%s
+        """
         cursor.execute(sql, (usuario, rol))
         result = cursor.fetchone()
 
         if result:
-            db_user, db_pass, db_rol = result
+            id_user, db_user, db_pass, db_rol, db_fk = result
             if db_pass == password:
-                return True, db_rol
+                return True, {"id_usuario": id_user, "rol": db_rol, "fk_productor": db_fk}
             else:
                 return False, "Contraseña incorrecta"
         else:
@@ -45,7 +49,7 @@ def verificar_credenciales(usuario, password, rol):
         conn.close()
 
 
-# -------------------- RUTAS PRINCIPALES --------------------
+# -------------------- LOGIN --------------------
 @app.route("/")
 def inicio():
     return render_template("index.html")
@@ -53,6 +57,12 @@ def inicio():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    conn, cursor = conectar_bd()
+
+    # OBTENER PRODUCTORES PARA EL SELECT
+    cursor.execute("SELECT pk_productor, nombre FROM Productores")
+    productores = cursor.fetchall()
+
     if request.method == "POST":
         usuario = request.form["usuario"]
         contra = request.form["password"]
@@ -63,20 +73,31 @@ def login():
         if exito:
             session["usuario"] = usuario
             session["rol"] = rol
+
+            # SI ES PRODUCTOR, GUARDAMOS EL FK
+            if rol == "Productor":
+                session["fk_productor"] = request.form.get("fk_productor")
+
             flash(f"Bienvenido {usuario} ({rol})", "success")
             return redirect(url_for("dashboard"))
         else:
             flash(info, "danger")
 
-    return render_template("login.html")
+    conn.close()
+
+    return render_template("login.html", productores=productores)
 
 
+#--------------- REGISTRAR -----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
+
     if request.method == "POST":
         usuario = request.form["usuario"]
         contra = request.form["password"]
         rol = request.form["rol"]
+
+        prod_id = None  # Por defecto no tiene productor asignado
 
         conn, cursor = conectar_bd()
         if not conn:
@@ -84,30 +105,69 @@ def register():
             return redirect(url_for("register"))
 
         try:
-            sql = "INSERT INTO usuarios (usuario, password, rol) VALUES (%s, %s, %s)"
-            cursor.execute(sql, (usuario, contra, rol))
+            # SI ES PRODUCTOR, PRIMERO INSERTAR EN TABLA PRODUCTORES
+            if rol == "Productor":
+                nombre = request.form["prod_nombre"]
+                ap_pat = request.form["prod_apellido_pat"]
+                ap_mat = request.form["prod_apellido_mat"]
+
+                sql_prod = """
+                INSERT INTO Productores (nombre, apellido_pat, apellido_mat, fk_predio, UPP)
+                VALUES (%s, %s, %s, NULL, 'No inscrito')
+                """
+                cursor.execute(sql_prod, (nombre, ap_pat, ap_mat))
+                conn.commit()
+
+                prod_id = cursor.lastrowid
+
+            # INSERTAR USUARIO
+            sql = """
+            INSERT INTO usuarios (usuario, password, rol, fk_productor)
+            VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(sql, (usuario, contra, rol, prod_id))
             conn.commit()
+
             flash("Usuario registrado correctamente", "success")
             return redirect(url_for("login"))
+
         except mariadb.Error as e:
             flash(f"No se pudo registrar: {e}", "danger")
+
         finally:
             conn.close()
 
     return render_template("register.html")
 
 
+#----------------- Dashboard -----------------
 @app.route("/dashboard")
 def dashboard():
     if "usuario" not in session:
         return redirect(url_for("login"))
-    return render_template("dashboard.html", usuario=session["usuario"], rol=session["rol"])
 
+    productor_nombre = None
 
-@app.route("/logout")
+    if session.get("fk_productor"):
+        conn, cursor = conectar_bd()
+        cursor.execute("SELECT nombre FROM productores WHERE pk_productor=%s", (session["fk_productor"],))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            productor_nombre = row[0]
+
+    return render_template(
+        "dashboard.html",
+        usuario=session["usuario"],
+        rol=session["rol"],
+        productor=productor_nombre
+    )
+
+@app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for("inicio"))
+    return redirect(url_for('inicio'))
 
 # ------------------ Ventana Animales ------------------
 @app.route("/animales", methods=["GET", "POST"])
@@ -136,8 +196,11 @@ def animales():
                 (nombre, fecha_nacimiento, cruze, fk_productor, fk_raza, foto_perfil, foto_lateral)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)"""
 
-            cursor.execute(sql, (nombre, fecha, cruze, fk_productor, fk_raza,
-                                 perfil_bytes, lateral_bytes))
+            cursor.execute(sql, (
+                nombre, fecha, cruze,
+                fk_productor, fk_raza,
+                perfil_bytes, lateral_bytes
+            ))
             conn.commit()
 
         # --- MODIFICAR ---
@@ -149,24 +212,21 @@ def animales():
             fk_productor = request.form["fk_productor"]
             fk_raza = request.form["fk_raza"]
 
-            # Actualizar datos principales
             sql = """UPDATE Animales
                      SET nombre=%s, fecha_nacimiento=%s, cruze=%s,
                          fk_productor=%s, fk_raza=%s
                      WHERE pk_animal=%s"""
+
             cursor.execute(sql, (nombre, fecha, cruze, fk_productor, fk_raza, pk))
 
-            # Si el usuario subió nuevas imágenes → actualizarlas
             if perfil_bytes:
                 cursor.execute("UPDATE Animales SET foto_perfil=%s WHERE pk_animal=%s",
                                (perfil_bytes, pk))
-
             if lateral_bytes:
                 cursor.execute("UPDATE Animales SET foto_lateral=%s WHERE pk_animal=%s",
                                (lateral_bytes, pk))
 
             conn.commit()
-
 
         # --- ELIMINAR ---
         elif accion == "eliminar":
@@ -180,20 +240,18 @@ def animales():
     )
     animales = cursor.fetchall()
 
-    cursor.execute("SELECT pk_productor, nombre,apellido_pat, apellido_mat FROM Productores")
+    cursor.execute("SELECT pk_productor, nombre FROM Productores")
     productores = cursor.fetchall()
 
     cursor.execute("SELECT pk_raza, nombre FROM Razas")
     razas = cursor.fetchall()
-    
+
     conn.close()
-        
+
     return render_template("animales.html", animales=animales, productores=productores, razas=razas)
 
 
-
-from flask import Response
-
+# ------------------ Mostrar imágenes ------------------
 @app.route("/imagen_animal/<int:id>/<string:tipo>")
 def imagen_animal(id, tipo):
     conn, cursor = conectar_bd()
@@ -206,121 +264,126 @@ def imagen_animal(id, tipo):
 
     return Response(imagen, mimetype="image/jpeg")
 
-#-------------------Funciones PREDIOS-------------------
-# Asegúrate de tener importadas estas cosas arriba de app.py
-from flask import render_template, request, redirect, url_for, session, flash
 
-# Ruta para Predios
+#------------------- PREDIOS -------------------
 @app.route("/predios", methods=["GET", "POST"])
 def predios():
-    # Asegúrate de que el usuario esté logueado
-    if "id_usuario" not in session:
+
+    if "fk_productor" not in session:
         flash("Inicia sesión para acceder a Predios.", "warning")
         return redirect(url_for("login"))
 
-    id_usuario = session.get("id_usuario")
+    fk_productor = session["fk_productor"]
 
     conn, cursor = conectar_bd()
-    if not conn:
-        flash("Error al conectar la base de datos.", "danger")
-        return redirect(url_for("dashboard"))
 
+    # --------------------
+    # Obtener productores
+    # --------------------
+    cursor.execute("SELECT pk_productor, nombre FROM Productores")
+    productores = cursor.fetchall()
+
+    # --------------------
+    # POST
+    # --------------------
     if request.method == "POST":
         accion = request.form.get("accion")
 
-        # --- REGISTRAR ---
         if accion == "registrar":
-            direccion = request.form.get("direccion", "").strip()
-            estado = request.form.get("estado", "").strip()
-            municipio = request.form.get("municipio", "").strip()
+            direccion = request.form.get("direccion")
+            estado = request.form.get("estado")
+            municipio = request.form.get("municipio")
+            fk_prod = request.form.get("fk_productor")  # 👈 nuevo
 
-            if not direccion or not estado or not municipio:
-                flash("Completa todos los campos para registrar.", "warning")
-            else:
-                try:
-                    sql = """
-                        INSERT INTO Predios (direccion, estado, municipio, fk_productor)
-                        VALUES (%s, %s, %s, %s)
-                    """
-                    cursor.execute(sql, (direccion, estado, municipio, id_usuario))
-                    conn.commit()
-                    flash("Predio registrado correctamente.", "success")
-                except Exception as e:
-                    conn.rollback()
-                    flash(f"No se pudo registrar el predio: {e}", "danger")
+            sql = """
+                INSERT INTO Predios (direccion, estado, municipio, fk_productor)
+                VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(sql, (direccion, estado, municipio, fk_prod))
+            conn.commit()
 
-        # --- MODIFICAR ---
         elif accion == "modificar":
-            try:
-                pk = int(request.form.get("pk", 0))
-            except ValueError:
-                pk = 0
+            pk = request.form.get("pk")
+            direccion = request.form.get("direccion")
+            estado = request.form.get("estado")
+            municipio = request.form.get("municipio")
+            fk_prod = request.form.get("fk_productor")
 
-            direccion = request.form.get("direccion", "").strip()
-            estado = request.form.get("estado", "").strip()
-            municipio = request.form.get("municipio", "").strip()
+            sql = """
+                UPDATE Predios
+                SET direccion=%s, estado=%s, municipio=%s, fk_productor=%s
+                WHERE pk_predio=%s
+            """
+            cursor.execute(sql, (direccion, estado, municipio, fk_prod, pk))
+            conn.commit()
 
-            if not pk or not direccion or not estado or not municipio:
-                flash("Selecciona un predio y completa los campos para modificar.", "warning")
-            else:
-                try:
-                    sql = """
-                        UPDATE Predios
-                        SET direccion=%s, estado=%s, municipio=%s
-                        WHERE pk_predio=%s AND fk_productor=%s
-                    """
-                    cursor.execute(sql, (direccion, estado, municipio, pk, id_usuario))
-                    conn.commit()
-                    if cursor.rowcount > 0:
-                        flash("Predio modificado correctamente.", "success")
-                    else:
-                        flash("No se encontró el predio o no tienes permiso para modificarlo.", "warning")
-                except Exception as e:
-                    conn.rollback()
-                    flash(f"No se pudo modificar: {e}", "danger")
-
-        # --- ELIMINAR ---
         elif accion == "eliminar":
-            try:
-                pk = int(request.form.get("pk", 0))
-            except ValueError:
-                pk = 0
+            pk = request.form.get("pk")
+            cursor.execute("DELETE FROM Predios WHERE pk_predio=%s", (pk,))
+            conn.commit()
 
-            if not pk:
-                flash("Selecciona un predio a eliminar.", "warning")
-            else:
-                try:
-                    cursor.execute("DELETE FROM Predios WHERE pk_predio=%s AND fk_productor=%s", (pk, id_usuario))
-                    conn.commit()
-                    if cursor.rowcount > 0:
-                        flash("Predio eliminado.", "success")
-                    else:
-                        flash("No se encontró el predio o no tienes permiso para eliminarlo.", "warning")
-                except Exception as e:
-                    conn.rollback()
-                    flash(f"No se pudo eliminar: {e}", "danger")
-
-        # Después de POST volvemos a la misma página para mostrar cambios
         return redirect(url_for("predios"))
 
-    # --- CONSULTAR (solo los del usuario) ---
-    try:
-        cursor.execute(
-            "SELECT pk_predio, direccion, estado, municipio FROM Predios WHERE fk_productor=%s ORDER BY pk_predio",
-            (id_usuario,)
-        )
-        predios = cursor.fetchall()
-    except Exception as e:
-        predios = []
-        flash(f"No se pudieron obtener los predios: {e}", "danger")
-    finally:
-        conn.close()
-        
-    return render_template("predios.html", predios=predios)
+    # --------------------
+    # GET
+    # --------------------
+    cursor.execute("""
+        SELECT pk_predio, direccion, estado, municipio
+        FROM Predios
+        WHERE fk_productor=%s
+    """, (fk_productor,))
+    predios = cursor.fetchall()
 
-# ------------------ RUTAS DE MÓDULOS (TEMPORALES) ------------------
+    conn.close()
 
+    return render_template("predios.html", predios=predios, productores=productores)
 
+#----------------Modificar los datos del productor--------------
+@app.route("/mi_productor", methods=["GET", "POST"])
+def mi_productor():
+    if "fk_productor" not in session:
+        flash("Debes iniciar sesión", "warning")
+        return redirect(url_for("login"))
+
+    fk_productor = session["fk_productor"]
+    conn, cursor = conectar_bd()
+
+    # --- GUARDAR CAMBIOS ---
+    if request.method == "POST":
+        nombre = request.form.get("nombre")
+        apellido_pat = request.form.get("apellido_pat")
+        apellido_mat = request.form.get("apellido_mat")
+        upp = request.form.get("UPP")
+        rfc = request.form.get("RFC")
+
+        sql = """
+            UPDATE Productores
+            SET nombre=%s, apellido_pat=%s, apellido_mat=%s, UPP=%s, RFC=%s
+            WHERE pk_productor=%s
+        """
+
+        try:
+            cursor.execute(sql, (nombre, apellido_pat, apellido_mat, upp, rfc, fk_productor))
+            conn.commit()
+            flash("Datos actualizados correctamente.", "success")
+        except mariadb.IntegrityError:
+            flash(" El RFC ya está registrado en otro productor.", "danger")
+
+        return redirect(url_for("mi_productor"))
+
+    # --- OBTENER DATOS DEL PRODUCTOR LOGUEADO ---
+    cursor.execute("""
+        SELECT pk_productor, nombre, apellido_pat, apellido_mat, UPP, RFC
+        FROM Productores
+        WHERE pk_productor=%s
+    """, (fk_productor,))
+
+    productor = cursor.fetchone()
+    conn.close()
+
+    return render_template("mi_productor.html", productor=productor)
+
+# ------------------ RUTAS TEMPORALES ------------------
 @app.route("/productor")
 def productor():
     return "<h2>Pendiente: Módulo Productor</h2>"
@@ -353,4 +416,3 @@ def upp():
 # -------------------- PROGRAMA PRINCIPAL --------------------
 if __name__ == "__main__":
     app.run(debug=True)
-
