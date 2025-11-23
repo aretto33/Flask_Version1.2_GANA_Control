@@ -133,4 +133,127 @@ MariaDB [Proyecto_Ganaderia]> DESCRIBE usuarios;
 5 rows in set (0.003 sec)
 
 MariaDB [Proyecto_Ganaderia]> 
+CREATE DATABASE IF NOT EXISTS Proyecto_Ganaderia;
+USE Proyecto_Ganaderia;
+
+-- =========================
+-- TABLA: Productores
+-- =========================
+CREATE TABLE Productores (
+    pk_productor INT(11) NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(255) DEFAULT NULL,
+    apellido_pat VARCHAR(255) DEFAULT NULL,
+    apellido_mat VARCHAR(255) DEFAULT NULL,
+    UPP VARCHAR(50) DEFAULT 'No inscrito',
+    RFC VARCHAR(50) UNIQUE,
+    PRIMARY KEY (pk_productor)
+);
+
+-- =========================
+-- TABLA: Razas
+-- =========================
+CREATE TABLE Razas (
+    pk_raza INT(11) NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    origen VARCHAR(100) NOT NULL DEFAULT 'Sin registro',
+    color VARCHAR(100) DEFAULT 'Sin definir',
+    PRIMARY KEY (pk_raza)
+);
+
+-- =========================
+-- TABLA: Animales
+-- =========================
+CREATE TABLE Animales (
+    pk_animal INT(11) NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    cruze TEXT NOT NULL DEFAULT 'Sin conocer',
+    foto_perfil MEDIUMBLOB DEFAULT NULL,
+    foto_lateral MEDIUMBLOB DEFAULT NULL,
+    fk_productor INT(11) DEFAULT NULL,
+    fk_raza INT(11) DEFAULT NULL,
+    sexo ENUM('M','H') NOT NULL,
+    peso_actual FLOAT DEFAULT NULL,
+    PRIMARY KEY (pk_animal),
+    FOREIGN KEY (fk_productor) REFERENCES Productores(pk_productor),
+    FOREIGN KEY (fk_raza) REFERENCES Razas(pk_raza)
+);
+
+-- =========================
+-- TABLA: Predios
+-- =========================
+CREATE TABLE Predios (
+    pk_predio INT(11) NOT NULL AUTO_INCREMENT,
+    direccion VARCHAR(255) DEFAULT NULL,
+    estado VARCHAR(100) NOT NULL,
+    municipio VARCHAR(100) NOT NULL,
+    fk_productor INT(11) NOT NULL,
+    PRIMARY KEY (pk_predio),
+    FOREIGN KEY (fk_productor) REFERENCES Productores(pk_productor)
+);
+
+-- =========================
+-- TABLA: Pesajes
+-- =========================
+CREATE TABLE Pesajes (
+    pk_pesaje INT(11) NOT NULL AUTO_INCREMENT,
+    pesaje FLOAT NOT NULL,
+    fecha DATE NOT NULL,
+    fk_animal INT(11) DEFAULT NULL,
+    PRIMARY KEY (pk_pesaje),
+    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal)
+);
+
+-- =========================
+-- TABLA: Registro_SINIGA
+-- =========================
+CREATE TABLE Registro_SINIGA (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    fk_animal INT(11) UNIQUE,
+    arete VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal)
+);
+
+-- =========================
+-- TABLA: Seguimiento_vet
+-- =========================
+CREATE TABLE Seguimiento_vet (
+    pk_segui_vet INT(11) NOT NULL AUTO_INCREMENT,
+    fk_animal INT(11) DEFAULT NULL,
+    tipo_tratamiento TEXT NOT NULL DEFAULT 'Chequeo',
+    fecha_actual DATE NOT NULL,
+    prox_fecha DATE DEFAULT NULL,
+    PRIMARY KEY (pk_segui_vet),
+    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal)
+);
+
+-- =========================
+-- TABLA: Ventas
+-- =========================
+CREATE TABLE Ventas (
+    pk_venta INT(11) NOT NULL AUTO_INCREMENT,
+    fk_animal INT(11) DEFAULT NULL,
+    fk_pesaje INT(11) DEFAULT NULL,
+    clave VARCHAR(50) NOT NULL,
+    precio DECIMAL(10,2) NOT NULL,
+    fecha_venta DATE NOT NULL,
+    PRIMARY KEY (pk_venta),
+    FOREIGN KEY (fk_animal) REFERENCES Animales(pk_animal),
+    FOREIGN KEY (fk_pesaje) REFERENCES Pesajes(pk_pesaje)
+);
+
+-- =========================
+-- TABLA: usuarios
+-- =========================
+CREATE TABLE usuarios (
+    id_usuario INT(11) NOT NULL AUTO_INCREMENT,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    rol VARCHAR(50) NOT NULL,
+    fk_productor INT(11) DEFAULT NULL,
+    PRIMARY KEY (id_usuario),
+    FOREIGN KEY (fk_productor) REFERENCES Productores(pk_productor)
+);
+
 
