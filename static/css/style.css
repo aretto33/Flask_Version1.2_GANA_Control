@@ -1,0 +1,126 @@
+body {
+    background-color: #fffcf8;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+/* === COLORES PRINCIPALES CAFÉ === */
+:root {
+    --cafe-claro: #c7a97a;
+    --cafe-medio: #b08968;
+    --cafe-oscuro: #7f5539;
+    --cafe-extra-oscuro: #3d2b1f;
+    --cafe-vainilla: #ecd9c3;
+    --crema: #f7efe5;
+}
+
+/* Fondo general */
+body {
+    background-color: var(--crema);
+    color: var(--cafe-extra-oscuro);
+}
+
+/* === Botón estándar café 3D === */
+.btn-cafe {
+    display: block;
+    background: var(--cafe-claro);
+    padding: 12px;
+    margin: 10px 0;
+    text-align: center;
+    text-decoration: none;
+    font-weight: bold;
+    color: var(--cafe-extra-oscuro);
+    border-radius: 10px;
+    border-bottom: 4px solid var(--cafe-medio);
+    box-shadow: 0px 4px 0px var(--cafe-oscuro);
+    transition: 0.1s;
+}
+
+.btn-cafe:hover {
+    background: var(--cafe-medio);
+}
+
+.btn-cafe:active {
+    transform: translateY(2px);
+    box-shadow: 0px 2px 0px var(--cafe-oscuro);
+    border-bottom: 2px solid var(--cafe-oscuro);
+}
+
+/* === Botón especial MIS DATOS === */
+.btn-datos {
+    display: block;
+    background: var(--cafe-vainilla);
+    padding: 14px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: bold;
+    color: var(--cafe-oscuro);
+    border-radius: 12px;
+    border-bottom: 5px solid var(--cafe-medio);
+    box-shadow: 0px 5px 0px var(--cafe-oscuro);
+    margin: 20px 0 30px 0;
+    transition: 0.1s;
+}
+
+.btn-datos:hover {
+    background: var(--crema);
+}
+
+.btn-datos:active {
+    transform: translateY(3px);
+    box-shadow: 0px 2px 0px var(--cafe-oscuro);
+    border-bottom: 2px solid var(--cafe-medio);
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: var(--crema);
+    border-right: 3px solid var(--cafe-medio);
+}
+
+/* === Titulos === */
+.titulo, .bienvenido {
+    color: var(--cafe-oscuro);
+}
+
+/* === Mini juego cajas y textos === */
+#game-area {
+    background: #e9f5dd; /* sigue siendo verde muy suave */
+    border-color: var(--cafe-medio);
+}
+
+#score {
+    color: var(--cafe-extra-oscuro);
+}
+
+/* Botón estilo café 3D */
+.btn-cafe {
+    background: #d2b48c; /* café claro tipo "tan" */
+    color: #4b2e18; /* café oscuro */
+    padding: 12px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+
+    /* Efecto 3D */
+    box-shadow: 0px 5px 0px #b08a62; /* sombra sólida café */
+    transition: all 0.1s ease-in-out;
+}
+
+/* Al pasar el mouse */
+.btn-cafe:hover {
+    background: #c8a97b;
+}
+
+/* Al presionar el botón (simula hundido) */
+.btn-cafe:active {
+    box-shadow: 0px 2px 0px #8b6a47;
+    transform: translateY(3px);
+}
