@@ -85,10 +85,18 @@ img.animal-img {
         <label>Foto lateral:</label>
         <input type="file" name="foto_lateral" accept="image/*">
 
+        <label>Sexo:</label>
+        <select name="sexo" id="sexo" required>
+            <option value="M">Macho</option>
+            <option value="H">Hembra</option>
+        </select>
+        <label>Peso actual (kg):</label>
+        <input type="number" step="0.1" name="peso_actual" id="peso_actual">
+
         <button class="btn" name="accion" value="registrar">Registrar</button>
+                
     </form>
 </div>
-
 <!-- TABLA -->
 <div class="animal-table">
     <h3>Animales Registrados</h3>
@@ -101,6 +109,8 @@ img.animal-img {
             <th>Cruze</th>
             <th>Productor</th>
             <th>Raza</th>
+            <th>Sexo</th>
+            <th>Peso Actual (kg)</th>
             <th>Foto Perfil</th>
             <th>Foto Lateral</th>
             <th>Acciones</th>
@@ -108,19 +118,23 @@ img.animal-img {
 
         {% for a in animales %}
         <tr>
-            <td>{{ a[0] }}</td>
-            <td>{{ a[1] }}</td>
-            <td>{{ a[2] }}</td>
-            <td>{{ a[3] }}</td>
-            <td>{{ a[4] }}</td>
-            <td>{{ a[5] }}</td>
+            <td>{{ a[0] }}</td> <!-- ID -->
+            <td>{{ a[1] }}</td> <!-- Nombre -->
+            <td>{{ a[2] }}</td> <!-- Fecha -->
+            <td>{{ a[3] }}</td> <!-- Cruze -->
+            <td>{{ a[4] }}</td> <!-- Nombre Productor -->
+            <td>{{ a[5] }}</td> <!-- Nombre Raza -->
+            <td>{{ a[6] }}</td> <!-- Sexo -->
+            <td>{{ a[7] }}</td> <!-- Peso -->
 
+            <!-- FOTO PERFIL -->
             <td>
                 <img class="animal-img" 
                      src="{{ url_for('imagen_animal', id=a[0], tipo='foto_perfil') }}"
                      onerror="this.style.display='none'">
             </td>
 
+            <!-- FOTO LATERAL -->
             <td>
                 <img class="animal-img" 
                      src="{{ url_for('imagen_animal', id=a[0], tipo='foto_lateral') }}"
@@ -130,7 +144,10 @@ img.animal-img {
             <!-- BOTONES DE ACCIÓN -->
             <td>
                 <button class="btn btn-small" 
-                        onclick="cargarFormulario('{{ a[0] }}','{{ a[1] }}','{{ a[2] }}','{{ a[3] }}','{{ a[4] }}','{{ a[5] }}')">
+                        onclick="cargarFormulario(
+                            '{{ a[0] }}','{{ a[1] }}','{{ a[2] }}','{{ a[3] }}',
+                            '{{ a[4] }}','{{ a[5] }}','{{ a[6] }}','{{ a[7] }}'
+                        )">
                     Modificar
                 </button>
 
@@ -148,18 +165,23 @@ img.animal-img {
 </div>
 
 <script>
-function cargarFormulario(id, nombre, fecha, cruze, productor, raza) {
+function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo, peso) {
     document.getElementById("pk").value = id;
     document.getElementById("nombre").value = nombre;
     document.getElementById("fecha").value = fecha;
     document.getElementById("cruze").value = cruze;
+
+    // Debe coincidir con el VALUE en el select
     document.getElementById("fk_productor").value = productor;
     document.getElementById("fk_raza").value = raza;
 
-    // Cambiar botón principal a "Modificar"
-    let form = document.getElementById("animalForm");
+    document.getElementById("sexo").value = sexo;
+    document.getElementById("peso_actual").value = peso;
 
+    // Botón modificar
+    let form = document.getElementById("animalForm");
     let existing = document.getElementById("btnModificar");
+
     if (!existing) {
         let btn = document.createElement("button");
         btn.innerText = "Modificar";
@@ -173,5 +195,4 @@ function cargarFormulario(id, nombre, fecha, cruze, productor, raza) {
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 </script>
-
 {% endblock %}

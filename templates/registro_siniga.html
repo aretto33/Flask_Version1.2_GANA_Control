@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.bg-box {
+    background: #e7d7c1;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bca58b;
+    margin-bottom: 12px;
+}
+
+.btn {
+    background: #8b5e3c;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+.btn:hover {
+    background: #6b452e;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+</style>
+
+<h2>Registro SINIGA</h2>
+
+<div class="bg-box">
+    <h3>Registrar / Modificar Registro</h3>
+
+    <form method="POST" id="formSiniga">
+        <input type="hidden" id="pk" name="pk">
+
+        <label>Animal:</label>
+        <select id="fk_animal" name="fk_animal" required>
+            <option value="">Seleccione...</option>
+            {% for a in animales %}
+            <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Arete:</label>
+        <input type="text" id="arete" name="arete" required>
+
+        <button class="btn" name="accion" value="registrar">Registrar</button>
+    </form>
+</div>
+
+<div class="bg-box">
+    <h3>Registros</h3>
+
+    <table border="1" width="100%" cellpadding="6">
+        <tr>
+            <th>ID</th>
+            <th>ID Animal</th>
+            <th>Nombre Animal</th>
+            <th>Arete</th>
+            <th>Acciones</th>
+        </tr>
+
+        {% for r in registros %}
+        <tr>
+            <td>{{ r[0] }}</td>
+            <td>{{ r[1] }}</td>
+            <td>{{ r[3] }}</td>
+            <td>{{ r[2] }}</td>
+            <td>
+                <button class="btn btn-small"
+                    onclick="cargar('{{ r[0] }}','{{ r[1] }}','{{ r[2] }}')">
+                    Modificar
+                </button>
+
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="pk" value="{{ r[0] }}">
+                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">
+                        Eliminar
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+function cargar(id, animal, arete){
+    document.getElementById("pk").value = id;
+    document.getElementById("fk_animal").value = animal;
+    document.getElementById("arete").value = arete;
+
+    let form = document.getElementById("formSiniga");
+
+    if (!document.getElementById("btnMod")) {
+        let b = document.createElement("button");
+        b.id = "btnMod";
+        b.className = "btn";
+        b.innerText = "Modificar";
+        b.name = "accion";
+        b.value = "modificar";
+        form.appendChild(b);
+    }
+
+    window.scrollTo({top: 0, behavior: "smooth"});
+}
+</script>
+
+{% endblock %}

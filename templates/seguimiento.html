@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.seg-form, .seg-table {
+    background: #f5e8d8;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bca58b;
+    margin-bottom: 12px;
+}
+
+.btn {
+    background: #8b5e3c;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+.btn:hover {
+    background: #6b452e;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+</style>
+
+<h2>🩺 Seguimiento Veterinario</h2>
+
+<div class="seg-form">
+    <h3>Registrar / Modificar Seguimiento</h3>
+
+    <form method="POST" id="segForm">
+        <input type="hidden" name="pk" id="pk">
+
+        <label>Nombre Animal:</label>
+        <select name="fk_animal" id="fk_animal" required>
+            <option value="">Seleccione...</option>
+            {% for a in animales %}
+            <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Tipo de Tratamiento:</label>
+        <input type="text" name="tipo_tratamiento" id="tipo_tratamiento" required>
+
+        <label>Fecha Actual:</label>
+        <input type="date" name="fecha_actual" id="fecha_actual" required>
+
+        <label>Próxima Fecha:</label>
+        <input type="date" name="prox_fecha" id="prox_fecha">
+
+        <button class="btn" name="accion" value="registrar">Registrar</button>
+    </form>
+</div>
+
+<div class="seg-table">
+    <h3>Registros de Seguimiento</h3>
+
+    <table border="1" width="100%" cellpadding="6">
+        <tr>
+            <th>ID</th>
+            <th>ID Animal</th>
+            <th>Tipo Tratamiento</th>
+            <th>Fecha Actual</th>
+            <th>Próxima</th>
+            <th>Acciones</th>
+        </tr>
+
+        {% for s in seguimientos %}
+        <tr>
+            <td>{{ s[0] }}</td>
+            <td>{{ s[1] }}</td>
+            <td>{{ s[2] }}</td>
+            <td>{{ s[3] }}</td>
+            <td>{{ s[4] }}</td>
+
+            <td>
+                <button class="btn btn-small"
+                    onclick="cargarFormulario('{{ s[0] }}','{{ s[1] }}','{{ s[2] }}','{{ s[3] }}','{{ s[4] }}')">
+                    Modificar
+                </button>
+
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="pk" value="{{ s[0] }}">
+                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">
+                        Eliminar
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+function cargarFormulario(pk, animal, tipo, fechaA, fechaP) {
+    document.getElementById("pk").value = pk;
+    document.getElementById("fk_animal").value = animal;
+    document.getElementById("tipo_tratamiento").value = tipo;
+    document.getElementById("fecha_actual").value = fechaA;
+    document.getElementById("prox_fecha").value = fechaP;
+
+    let form = document.getElementById("segForm");
+
+    if (!document.getElementById("modBtn")) {
+        let btn = document.createElement("button");
+        btn.innerText = "Modificar";
+        btn.className = "btn";
+        btn.name = "accion";
+        btn.value = "modificar";
+        btn.id = "modBtn";
+        form.appendChild(btn);
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+
+{% endblock %}

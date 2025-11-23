@@ -2,7 +2,8 @@
 {% block content %}
 
 <style>
-    /* Ajuste del banner */
+
+    /* Banner */
     .banner {
         width: 100%;
         max-width: 1300px;
@@ -17,7 +18,51 @@
         margin: auto;
     }
 
-    /* 🎮 Estilos del mini-juego */
+    /* === Estilos Botones Café 3D === */
+    .btn-cafe {
+        display: block;
+        background: #c7a97a;
+        padding: 12px;
+        margin: 10px 0;
+        text-align: center;
+        text-decoration: none;
+        font-weight: bold;
+        color: #4b3621;
+        border-radius: 10px;
+        border-bottom: 4px solid #9b7b54;
+        box-shadow: 0px 4px 0px #8b6b47;
+        transition: 0.1s;
+    }
+
+    .btn-cafe:active {
+        transform: translateY(2px);
+        box-shadow: 0px 2px 0px #8b6b47;
+        border-bottom: 2px solid #9b7b54;
+    }
+
+    /* Botón especial MIS DATOS */
+    .btn-datos {
+        display: block;
+        background: #eed9b6;
+        padding: 14px;
+        text-align: center;
+        text-decoration: none;
+        font-weight: bold;
+        color: #5c432a;
+        border-radius: 12px;
+        border-bottom: 5px solid #c4a076;
+        box-shadow: 0px 5px 0px #a58563;
+        margin: 20px 0 30px 0;
+        transition: 0.1s;
+    }
+
+    .btn-datos:active {
+        transform: translateY(3px);
+        box-shadow: 0px 2px 0px #a58563;
+        border-bottom: 2px solid #c4a076;
+    }
+
+    /* === Mini juego === */
     #game-area {
         width: 100%;
         height: 250px;
@@ -60,38 +105,55 @@
         margin-top: 10px;
         text-align: center;
     }
+
+    /* Sidebar */
+    .sidebar {
+        width: 230px;
+        padding: 15px;
+    }
+
+    .dashboard {
+        display: flex;
+    }
+
 </style>
+
 
 <div class="dashboard">
 
-    <!-- Panel lateral -->
+    <!-- ===== PANEL LATERAL ===== -->
     <div class="sidebar">
-        <a href="{{ url_for('animales') }}">Animales</a>
-        <a href="{{ url_for('predios') }}">Predios</a>
-        <a href="{{ url_for('mi_productor') }}">Mis datos</a>
-        <a href="{{ url_for('pesajes') }}">Pesaje</a>
-        <a href="{{ url_for('siniga') }}">Registro SINIGA</a>
-        <a href="{{ url_for('seguimiento') }}">Seg. Veterinario</a>
-        <a href="{{ url_for('ventas') }}">Venta</a>
-        <a href="{{ url_for('razas') }}">Razas</a>
+
+        <!-- Botón MIS DATOS separado -->
+        <a href="{{ url_for('mi_productor') }}" class="btn-datos">Mis Datos</a>
+
+        <!-- Resto del menú -->
+        <a href="{{ url_for('animales') }}" class="btn-cafe">Animales</a>
+        <a href="{{ url_for('predios') }}" class="btn-cafe">Predios</a>
+        <a href="{{ url_for('pesajes') }}" class="btn-cafe">Pesaje</a>
+        <a href="{{ url_for('registro_siniga') }}" class="btn-cafe">Registro SINIGA</a>
+        <a href="{{ url_for('seguimiento') }}" class="btn-cafe">Seg. Veterinario</a>
+        <a href="{{ url_for('ventas') }}" class="btn-cafe">Venta</a>
+        <a href="{{ url_for('razas') }}" class="btn-cafe">Razas</a>
+
     </div>
 
-    <!-- Panel central -->
+    <!-- ===== PANEL CENTRAL ===== -->
     <div class="contenido">
 
-        <h2 class="bienvenido"> Bienvenido {{ usuario }} ({{ rol }})</h2>
+        <h2 class="bienvenido">Bienvenido {{ usuario }} ({{ rol }})</h2>
 
         <img src="{{ url_for('static', filename='img/banner.png') }}" class="banner">
 
         <h1 class="titulo">Trámites</h1>
 
         <div class="tramites">
-            <a class="btn" href="{{ url_for('upp') }}">Inscripción UPP</a>
-            <a class="btn" href="#">Trámites Datos</a>
-            <a class="btn" href="#">Trámite 3</a>
+            <a href="#" class="btn-cafe">Inscripción UPP</a>
+            <a href="#" class="btn-cafe">Trámites Datos</a>
+            <a href="#" class="btn-cafe">Trámite 3</a>
         </div>
 
-        <!-- 🎮 MINIJUEGO DE VACAS -->
+        <!-- Mini juego -->
         <h2 style="margin-top:40px; text-align:center;">Mini-Juego: ¡Evita los obstáculos!</h2>
 
         <div id="game-area">
@@ -111,7 +173,6 @@
     let cowY = 90;
     let score = 0;
 
-    // Saltar con espacio
     document.addEventListener("keydown", (e) => {
         if (e.code === "Space") {
             cowY -= 60;
@@ -126,7 +187,6 @@
         }
     });
 
-    // Sistema simple de puntaje
     setInterval(() => {
         score++;
         scoreValue.textContent = score;

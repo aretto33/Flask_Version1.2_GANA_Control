@@ -8,34 +8,48 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
-<body class="bg-light">
+<body class="style">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
+    <!-- NAVBAR EN GAMA CAFÉ -->
+    <nav class="navbar navbar-expand-lg px-4 shadow"
+         style="background-color:#7f5539; border-bottom:4px solid #3d2b1f;">
+        
         <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('inicio') }}">
             <img src="{{ url_for('static', filename='img/logo.png') }}" 
-                alt="GANA_CONTROL" 
-                style="height:60px; width:auto;">
-            <span>GANA_CONTROL®</span>
+                 alt="GANA_CONTROL" 
+                 style="height:60px; width:auto; border-radius:8px;">
+            <span style="font-weight:bold; color:#f7efe5;">GANA_CONTROL®</span>
         </a>
 
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#navbarMenu" style="border-color:#f7efe5;">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-
-        <div class="collapse navbar-collapse">
+        <div class="collapse navbar-collapse" id="navbarMenu">
             <ul class="navbar-nav ms-auto">
 
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('inicio') }}">Inicio</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('inicio') }}" style="color:#f7efe5;">Inicio</a>
+                </li>
 
                 {% if not session.get('usuario') %}
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Iniciar sesión</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Registrar</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}" style="color:#f7efe5;">Iniciar sesión</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}" style="color:#f7efe5;">Registrar</a></li>
                 {% endif %}
 
                 {% if session.get('usuario') %}
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Panel</a></li>
-                <li class="nav-item"><a class="nav-link text-warning" href="{{ url_for('logout') }}">Salir</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}" style="color:#f7efe5;">Panel</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}" 
+                           style="color:#ecd9c3; font-weight:bold;">
+                           Salir
+                        </a>
+                    </li>
                 {% endif %}
             </ul>
         </div>
+
     </nav>
 
     <div class="container mt-4">

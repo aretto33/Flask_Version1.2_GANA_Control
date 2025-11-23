@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="text-center">
+    <img src="{{ url_for('static', filename='img/banner.png') }}" 
+         class="img-fluid mb-4"
+         style="max-height:200px">
+</div>
+
+<h1 class="text-primary fw-bold text-center">Guía de razas bobinas</h1>
+<p class="fs-5 text-secondary text-center">Alrededor de todo el mundo existen 250 de razas de ganado, esto es sumamente interesante de conocer. La mayoría de las razas son creadas por medio de una combinación de cruzes y experimentación de genes. CAda una tiene sus únicas caracgerísticas que las hacen destacar de otra y para el mundo ganadero es de suma importancia conocer su origen y las cualidades que ayudan a la toma de deciciones para la compra de bovinos que mejoraran la genética de nustras reces.</p>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="d-flex justify-content-center align-items-center mt-4" style="gap: 30px; flex-wrap: wrap;">
+
+
+
+</div>
+
+<!-- VACA ABAJO -->
+<div class="text-center mt-4">
+    <img src="{{ url_for('static', filename='img/vaca1.gif') }}" 
+         class="img-fluid"
+         style="max-width:180px;">
+</div>
+
+{% endblock %}
