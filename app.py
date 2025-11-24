@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, send_from_directory
 import mariadb
 
 app = Flask(__name__)
@@ -8,9 +8,9 @@ app.secret_key = "SECRET_KEY_GANACONTROL_2025"
 def conectar_bd():
     try:
         conn = mariadb.connect(
-            host="localhost",
-            user="AdminGanaderia",
-            password="2025",
+            host="18.188.180.142",
+            user="arletteg",
+            password="123456",
             database="Proyecto_Ganaderia"
         )
         return conn, conn.cursor()
@@ -395,12 +395,77 @@ def mi_productor():
 
     return render_template("mi_productor.html", productor=productor)
 
-# ------------------ RUTAS TEMPORALES ------------------
+# ------------------ PESAJES ----------------------------------
 
-
-@app.route("/pesajes")
+@app.route("/pesajes", methods=["GET", "POST"])
 def pesajes():
-    return "<h2>Pendiente: Módulo Pesajes</h2>"
+    conn = None
+    cursor = None
+
+    try:
+        conn, cursor = conectar_bd()
+
+        if request.method == "POST":
+            accion = request.form.get("accion")
+
+            # REGISTRAR
+            if accion == "registrar":
+                pesaje_val = request.form.get("pesaje")
+                fecha = request.form.get("fecha")
+                fk_animal = request.form.get("fk_animal") or None
+
+                cursor.execute("""
+                    INSERT INTO Pesajes (pesaje, fecha, fk_animal)
+                    VALUES (%s, %s, %s)
+                """, (pesaje_val, fecha, fk_animal))
+                conn.commit()
+                flash("Pesaje registrado correctamente", "success")
+
+            # MODIFICAR
+            elif accion == "modificar":
+                pk = request.form.get("pk")
+                pesaje_val = request.form.get("pesaje")
+                fecha = request.form.get("fecha")
+                fk_animal = request.form.get("fk_animal") or None
+
+                cursor.execute("""
+                    UPDATE Pesajes
+                    SET pesaje=%s, fecha=%s, fk_animal=%s
+                    WHERE pk_pesaje=%s
+                """, (pesaje_val, fecha, fk_animal, pk))
+                conn.commit()
+                flash("Pesaje modificado correctamente", "info")
+
+            # ELIMINAR
+            elif accion == "eliminar":
+                pk = request.form.get("pk")
+                cursor.execute("DELETE FROM Pesajes WHERE pk_pesaje=%s", (pk,))
+                conn.commit()
+                flash("Pesaje eliminado", "danger")
+
+        # CONSULTAR REGISTROS
+        cursor.execute("""
+            SELECT p.pk_pesaje, p.pesaje, p.fecha, a.pk_animal, a.nombre
+            FROM Pesajes p
+            LEFT JOIN Animales a ON p.fk_animal = a.pk_animal
+            ORDER BY p.pk_pesaje DESC
+        """)
+        pesajes = cursor.fetchall()
+
+        # Animales para el select
+        cursor.execute("SELECT pk_animal, nombre FROM Animales")
+        animales = cursor.fetchall()
+
+    except Exception as e:
+        flash(f"Error en módulo Pesajes: {e}", "danger")
+        pesajes = []
+        animales = []
+
+    finally:
+        if conn:
+            conn.close()
+
+    return render_template("pesajes.html", pesajes=pesajes, animales=animales)
 
 #_-------------------------------SIINIGA-------------------------------
 
@@ -521,14 +586,155 @@ def seguimiento():
     return render_template("seguimiento.html", seguimientos=seguimientos, animales=animales)
 #------------------------------------------------------------------------------------------
 
-@app.route("/ventas")
-def ventas():
-    return "<h2>Pendiente: Ventas</h2>"
 
-@app.route("/razas")
+# ----------------------VENTAS ---------------------------------------------
+@app.route("/ventas", methods=["GET", "POST"])
+def ventas():
+    conn = None
+    cursor = None
+
+    try:
+        conn, cursor = conectar_bd()
+
+        if request.method == "POST":
+            accion = request.form.get("accion")
+
+            # REGISTRAR
+            if accion == "registrar":
+                fk_animal = request.form.get("fk_animal") or None
+                fk_pesaje = request.form.get("fk_pesaje") or None
+                clave = request.form.get("clave")
+                precio = request.form.get("precio")
+                fecha_venta = request.form.get("fecha_venta")
+
+                cursor.execute("""
+                    INSERT INTO Ventas (fk_animal, fk_pesaje, clave, precio, fecha_venta)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (fk_animal, fk_pesaje, clave, precio, fecha_venta))
+                conn.commit()
+                flash("Venta registrada correctamente", "success")
+
+            # MODIFICAR
+            elif accion == "modificar":
+                pk = request.form.get("pk")
+                fk_animal = request.form.get("fk_animal") or None
+                fk_pesaje = request.form.get("fk_pesaje") or None
+                clave = request.form.get("clave")
+                precio = request.form.get("precio")
+                fecha_venta = request.form.get("fecha_venta")
+
+                cursor.execute("""
+                    UPDATE Ventas
+                    SET fk_animal=%s, fk_pesaje=%s, clave=%s, precio=%s, fecha_venta=%s
+                    WHERE pk_venta=%s
+                """, (fk_animal, fk_pesaje, clave, precio, fecha_venta, pk))
+                conn.commit()
+                flash("Venta modificada correctamente", "info")
+
+            # ELIMINAR
+            elif accion == "eliminar":
+                pk = request.form.get("pk")
+                cursor.execute("DELETE FROM Ventas WHERE pk_venta=%s", (pk,))
+                conn.commit()
+                flash("Venta eliminada", "danger")
+
+        # CONSULTAR REGISTROS
+        cursor.execute("""
+            SELECT v.pk_venta, v.fk_animal, v.fk_pesaje, v.clave, v.precio, v.fecha_venta,
+                   a.nombre AS animal_nombre, p.pesaje
+            FROM Ventas v
+            LEFT JOIN Animales a ON v.fk_animal = a.pk_animal
+            LEFT JOIN Pesajes p ON v.fk_pesaje = p.pk_pesaje
+            ORDER BY v.pk_venta DESC
+        """)
+        ventas_list = cursor.fetchall()
+
+        # Animales para el select
+        cursor.execute("SELECT pk_animal, nombre FROM Animales")
+        animales = cursor.fetchall()
+
+        # Pesajes para el select
+        cursor.execute("SELECT pk_pesaje, pesaje FROM Pesajes")
+        pesajes = cursor.fetchall()
+
+    except Exception as e:
+        flash(f"Error en módulo Ventas: {e}", "danger")
+        ventas_list = []
+        animales = []
+        pesajes = []
+
+    finally:
+        if conn:
+            conn.close()
+
+    return render_template("ventas.html", ventas=ventas_list, animales=animales, pesajes=pesajes)
+
+
+# ----------------------RAZAS ---------------------------------------------
+@app.route("/razas", methods=["GET", "POST"])
 def razas():
-    return "<h2>Pendiente: Razas</h2>"
-    
+    conn = None
+    cursor = None
+
+    try:
+        conn, cursor = conectar_bd()
+
+        if request.method == "POST":
+            accion = request.form.get("accion")
+
+            # REGISTRAR
+            if accion == "registrar":
+                nombre = request.form.get("nombre")
+                origen = request.form.get("origen")
+                color = request.form.get("color")
+
+                cursor.execute("""
+                    INSERT INTO Razas (nombre, origen, color)
+                    VALUES (%s, %s, %s)
+                """, (nombre, origen, color))
+                conn.commit()
+                flash("Raza registrada correctamente", "success")
+
+            # MODIFICAR
+            elif accion == "modificar":
+                pk = request.form.get("pk")
+                nombre = request.form.get("nombre")
+                origen = request.form.get("origen")
+                color = request.form.get("color")
+
+                cursor.execute("""
+                    UPDATE Razas
+                    SET nombre=%s, origen=%s, color=%s
+                    WHERE pk_raza=%s
+                """, (nombre, origen, color, pk))
+                conn.commit()
+                flash("Raza modificada correctamente", "info")
+
+            # ELIMINAR
+            elif accion == "eliminar":
+                pk = request.form.get("pk")
+                cursor.execute("DELETE FROM Razas WHERE pk_raza=%s", (pk,))
+                conn.commit()
+                flash("Raza eliminada", "danger")
+
+        # CONSULTAR REGISTROS
+        cursor.execute("""
+            SELECT pk_raza, nombre, origen, color
+            FROM Razas
+            ORDER BY pk_raza DESC
+        """)
+        razas_list = cursor.fetchall()
+
+    except Exception as e:
+        flash(f"Error en módulo Razas: {e}", "danger")
+        razas_list = []
+
+    finally:
+        if conn:
+            conn.close()
+
+    return render_template("razas.html", razas=razas_list)
+
 @app.route("/upp")
 def upp():
     return send_from_directory(
