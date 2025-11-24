@@ -528,10 +528,14 @@ def ventas():
 @app.route("/razas")
 def razas():
     return "<h2>Pendiente: Razas</h2>"
-
+    
 @app.route("/upp")
 def upp():
-    return "<h2>Pendiente: Inscripción UPP</h2>"
+    return send_from_directory(
+        directory="static/pdf",
+        path="solicitud_pgn.pdf",
+        as_attachment = True
+    )
 
 
 @app.route("/album_razas")
