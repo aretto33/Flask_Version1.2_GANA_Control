@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+/* --- ESTILOS IDÉNTICOS A TU MÓDULO DE ANIMALES --- */
+.rearetado-form {
+    background: #f5e8d8; /* Mismo beige de fondo */
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #dccbb5;
+}
+
+/* Aplicamos estilo a inputs y textarea */
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bca58b; /* Borde café claro */
+    margin-bottom: 12px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+/* Estilo del botón */
+.btn {
+    background: #8b5e3c; /* Café fuerte */
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn:hover {
+    background: #6b452e; /* Oscurecer al pasar mouse */
+}
+
+h2 {
+    text-align: center;
+    color: #5d4037;
+    margin-bottom: 20px;
+}
+
+h3 {
+    margin-top: 0;
+    color: #6b452e;
+    font-size: 1.2rem;
+    border-bottom: 2px solid #bca58b;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+/* Utilidad para poner inputs lado a lado */
+.form-group-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-group-half {
+    flex: 1;
+}
+
+/* Ajuste para celulares */
+@media (max-width: 600px) {
+    .form-group-row {
+        flex-direction: column;
+        gap: 0;
+    }
+}
+</style>
+
+<h2>Generación de Documentos</h2>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="rearetado-form">
+    <h3>Generar Acta de Re-aretado</h3>
+    
+    <form action="/generar_pdf_rearetado" method="POST" target="_blank">
+        
+        <!-- FILA 1: ARETES -->
+        <div class="form-group-row">
+            <div class="form-group-half">
+                <label style="font-weight:bold; color:#5d4037;">Arete Anterior (Baja):</label>
+                <input type="text" name="arete_anterior" placeholder="Ej: MX-1020" required>
+            </div>
+            <div class="form-group-half">
+                <label style="font-weight:bold; color:#5d4037;">Arete Nuevo (Alta):</label>
+                <input type="text" name="arete_nuevo" placeholder="Ej: MX-9900" required>
+            </div>
+        </div>
+
+        <!-- FILA 2: MOTIVO -->
+        <label style="font-weight:bold; color:#5d4037;">Motivo del Cambio:</label>
+        <textarea name="motivo" rows="4" placeholder="Describa la razón del cambio (pérdida, daño, infección...)" required></textarea>
+
+        <!-- FILA 3: DATOS FINALES -->
+        <div class="form-group-row">
+            <div class="form-group-half">
+                <label style="font-weight:bold; color:#5d4037;">Responsable:</label>
+                <!-- Input grisáceo para indicar que es de solo lectura -->
+                <input type="text" name="responsable" value="{{ session.get('usuario', '') }}" readonly style="background-color: #e6dace; color: #555;">
+            </div>
+            <div class="form-group-half">
+                <label style="font-weight:bold; color:#5d4037;">Fecha del Suceso:</label>
+                <input type="date" name="fecha" required>
+            </div>
+        </div>
+        
+        <!-- BOTÓN DE ACCIÓN -->
+        <button type="submit" class="btn">
+            Generar y Descargar PDF
+        </button>
+
+    </form>
+</div>
+
+{% endblock %}on>
