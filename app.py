@@ -150,7 +150,7 @@ def dashboard():
 
     if session.get("fk_productor"):
         conn, cursor = conectar_bd()
-        cursor.execute("SELECT nombre FROM productores WHERE pk_productor=%s", (session["fk_productor"],))
+        cursor.execute("SELECT nombre FROM Productores WHERE pk_productor=%s", (session["fk_productor"],))
         row = cursor.fetchone()
         conn.close()
 
