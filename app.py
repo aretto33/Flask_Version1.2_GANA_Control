@@ -1,5 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, render_template, request, make_response, send_from_directory
 import mariadb
+from fpdf import FPDF
+from datetime import datetime
+
 
 app = Flask(__name__)
 app.secret_key = "SECRET_KEY_GANACONTROL_2025"
@@ -743,7 +746,120 @@ def upp():
         as_attachment = True
     )
 
+#--------------Sección done nos describe la forma o el procedimiento para generar un pdf------------
+# --- CLASE PDF PERSONALIZADA ---
+class PDFRearetado(FPDF):
+    def header(self):
+        # Título principal centrado
+        self.set_font('Arial', 'B', 14)
+        self.cell(0, 10, 'CONTROL GANADERO - REPORTE DE INCIDENCIA', 0, 1, 'C')
+        
+        # Subtítulo itálica
+        self.set_font('Arial', 'I', 10)
+        self.cell(0, 5, 'Departamento de Control Sanitario e Identificación', 0, 1, 'C')
+        self.ln(20) # Espacio después del encabezado
 
+    def footer(self):
+        # Pie de página simple
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'R')
+
+# 2. RUTA PARA MOSTRAR EL FORMULARIO
+@app.route('/rearetado')
+def rearetado():
+    return render_template('rearetado.html')
+
+# 3. RUTA QUE GENERA EL PDF IDÉNTICO A TU IMAGEN
+@app.route('/generar_pdf_rearetado', methods=['POST'])
+def generar_pdf_rearetado():
+    try:
+        # Obtener datos del formulario
+        arete_ant = request.form.get('arete_anterior', '---')
+        arete_nue = request.form.get('arete_nuevo', '---')
+        motivo = request.form.get('motivo', '---')
+        responsable = request.form.get('responsable', '').upper()
+        fecha = request.form.get('fecha')
+
+        # Formatear la fecha a dd/mm/aaaa si es posible
+        try:
+            fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
+            fecha_fmt = fecha_obj.strftime('%d/%m/%Y')
+        except:
+            fecha_fmt = fecha
+
+        # --- CREACIÓN DEL PDF ---
+        pdf = PDFRearetado()
+        pdf.add_page()
+        
+        # Título del Acta
+        pdf.ln(5)
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'ACTA DE RE-ARETADO / CAMBIO DE IDENTIFICADOR', 0, 1, 'C')
+        pdf.ln(10)
+
+        # Fecha alineada a la derecha
+        pdf.set_font('Arial', '', 11)
+        pdf.cell(0, 10, f'Fecha del suceso: {fecha_fmt}', 0, 1, 'R')
+        pdf.ln(5)
+
+        # Párrafo introductorio
+        texto_intro = "Por medio de la presente se hace constar el cambio de identificación oficial del animal, debido a una incidencia reportada en el sistema."
+        # Decodificar caracteres latinos
+        pdf.multi_cell(0, 8, texto_intro.encode('latin-1', 'replace').decode('latin-1'))
+        pdf.ln(10)
+
+        # --- SECCIÓN DETALLES (Idéntico a tu imagen) ---
+        pdf.set_font('Arial', '', 11)
+        pdf.cell(0, 8, "DETALLES DEL CAMBIO:", 0, 1)
+        
+        # Línea punteada simulada
+        pdf.cell(0, 5, "-"*65, 0, 1) 
+        
+        # Datos de los aretes
+        pdf.ln(2)
+        pdf.cell(60, 8, f"Identificador Anterior (Baja):   {arete_ant}", 0, 1)
+        pdf.cell(60, 8, f"Identificador Nuevo (Alta):      {arete_nue}", 0, 1)
+        pdf.ln(2)
+        
+        # Línea punteada cierre
+        pdf.cell(0, 5, "-"*65, 0, 1)
+        pdf.ln(10)
+
+        # --- SECCIÓN MOTIVO ---
+        pdf.cell(0, 8, "MOTIVO DECLARADO:", 0, 1)
+        motivo_safe = motivo.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 8, motivo_safe)
+        
+        # --- FIRMAS AL PIE ---
+        pdf.set_y(-60) # Posición fija abajo
+        y_firmas = pdf.get_y()
+        
+        # Línea Izquierda
+        pdf.line(30, y_firmas, 90, y_firmas)
+        pdf.set_xy(30, y_firmas + 2)
+        pdf.set_font('Arial', '', 10)
+        pdf.cell(60, 5, "Firma del Responsable", 0, 0, 'C')
+        # Nombre del responsable debajo de la firma
+        pdf.set_xy(30, y_firmas + 7)
+        pdf.set_font('Arial', 'B', 10)
+        pdf.cell(60, 5, responsable, 0, 0, 'C')
+
+        # Línea Derecha
+        pdf.line(120, y_firmas, 180, y_firmas)
+        pdf.set_xy(120, y_firmas + 2)
+        pdf.set_font('Arial', '', 10)
+        pdf.cell(60, 5, "Sello Institucional", 0, 0, 'C')
+
+        # Salida del PDF
+        response = make_response(pdf.output(dest='S').encode('latin-1'))
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'inline; filename=Rearetado_{arete_nue}.pdf'
+        return response
+
+    except Exception as e:
+        return f"Error al generar PDF: {e}"
+#--------------Blog donde se hablan de tipos de razas en tabasco-------
 @app.route("/album_razas")
 def album_razas():
     return render_template("album_razas.html")
