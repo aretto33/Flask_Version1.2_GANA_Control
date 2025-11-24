@@ -255,5 +255,18 @@ CREATE TABLE usuarios (
     PRIMARY KEY (id_usuario),
     FOREIGN KEY (fk_productor) REFERENCES Productores(pk_productor)
 );
+DROP TRIGGER IF EXISTS actualizar_peso;
+DELIMITER $$
+CREATE TRIGGER actualizar_peso
+AFTER INSERT ON Pesajes
+FOR EACH ROW
+BEGIN
+UPDATE Animales
+SET peso_actual = NEW.pesaje
+WHERE pk_animal = NEW.fk_animal;
+END $$
+DELIMITER ;
+
+
 
 
