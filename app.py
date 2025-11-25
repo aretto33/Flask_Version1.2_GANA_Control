@@ -8,19 +8,30 @@ app = Flask(__name__)
 app.secret_key = "SECRET_KEY_GANACONTROL_2025"
 
 # -------------------- CONEXIÓN A LA BD --------------------
+#<def conectar_bd():
+ #   try:
+ #       conn = mariadb.connect(
+ #           host="18.188.180.142",
+ #           user="arletteg",
+ #           password="123456",
+ #           database="Proyecto_Ganaderia"
+#        )
+ #       return conn, conn.cursor()
+#    except mariadb.Error as e:
+  #      print("Error de conexión:", e)
+ #       return None, None
 def conectar_bd():
     try:
         conn = mariadb.connect(
-            host="18.188.180.142",
-            user="arletteg",
-            password="123456",
+            host="localhost",
+            user="AdminGanaderia",
+            password="2025",
             database="Proyecto_Ganaderia"
         )
         return conn, conn.cursor()
     except mariadb.Error as e:
         print("Error de conexión:", e)
         return None, None
-
 
 # -------------------- VALIDAR CREDENCIALES --------------------
 def verificar_credenciales(usuario, password, rol):
@@ -76,10 +87,10 @@ def login():
         if exito:
             session["usuario"] = usuario
             session["rol"] = rol
-
             # SI ES PRODUCTOR, GUARDAMOS EL FK
-            if rol == "Productor":
-                session["fk_productor"] = request.form.get("fk_productor")
+    # guardar fk_productor tomado de la BD (devuelto en info)
+        if isinstance(info, dict) and info.get("fk_productor"):
+            session["fk_productor"] = info.get("fk_productor")
 
             flash(f"Bienvenido {usuario} ({rol})", "success")
             return redirect(url_for("dashboard"))
@@ -115,8 +126,8 @@ def register():
                 ap_mat = request.form["prod_apellido_mat"]
 
                 sql_prod = """
-                INSERT INTO Productores (nombre, apellido_pat, apellido_mat, fk_predio, UPP)
-                VALUES (%s, %s, %s, NULL, 'No inscrito')
+                INSERT INTO Productores (nombre, apellido_pat, apellido_mat, UPP)
+                VALUES (%s, %s, %s,'No inscrito')
                 """
                 cursor.execute(sql_prod, (nombre, ap_pat, ap_mat))
                 conn.commit()
@@ -175,94 +186,139 @@ def logout():
 # ------------------ Ventana Animales ------------------
 @app.route("/animales", methods=["GET", "POST"])
 def animales():
-    conn, cursor = conectar_bd()
+    # Requiere sesión
+    if "usuario" not in session:
+        flash("Debes iniciar sesión", "warning")
+        return redirect(url_for("login"))
 
-    if request.method == "POST":
-        accion = request.form.get("accion")
+    conn = None
+    cursor = None
 
-        foto_perfil = request.files.get("foto_perfil")
-        foto_lateral = request.files.get("foto_lateral")
+    try:
+        conn, cursor = conectar_bd()
+        if not conn:
+            flash("Error al conectar con la base de datos", "danger")
+            return redirect(url_for("inicio"))
 
-        perfil_bytes = foto_perfil.read() if foto_perfil and foto_perfil.filename else None
-        lateral_bytes = foto_lateral.read() if foto_lateral and foto_lateral.filename else None
+        if request.method == "POST":
+            accion = request.form.get("accion")
 
-        # REGISTRAR
-        if accion == "registrar":
-            nombre = request.form["nombre"]
-            fecha = request.form["fecha"]
-            cruze = request.form["cruze"] or "Sin conocer"
-            sexo = request.form["sexo"]
-            peso_actual = request.form.get("peso_actual") or None
-            fk_productor = request.form["fk_productor"] or None
-            fk_raza = request.form["fk_raza"] or None
+            # Obtener imágenes si las mandaron
+            foto_perfil = request.files.get("foto_perfil")
+            foto_lateral = request.files.get("foto_lateral")
 
-            sql = """INSERT INTO Animales 
-                (nombre, fecha_nacimiento, cruze, sexo, peso_actual,
-                 fk_productor, fk_raza, foto_perfil, foto_lateral)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+            perfil_bytes = foto_perfil.read() if foto_perfil and foto_perfil.filename else None
+            lateral_bytes = foto_lateral.read() if foto_lateral and foto_lateral.filename else None
 
-            cursor.execute(sql, (
-                nombre, fecha, cruze, sexo, peso_actual, 
-                fk_productor, fk_raza, perfil_bytes, lateral_bytes
-            ))
-            conn.commit()
+            # Determinar fk_productor según el rol del usuario (si es productor usar el suyo)
+            if session.get("rol") == "Productor":
+                fk_prod_session = session.get("fk_productor")
+            else:
+                fk_prod_session = None
 
-        # MODIFICAR
-        elif accion == "modificar":
-            pk = request.form["pk"]
-            nombre = request.form["nombre"]
-            fecha = request.form["fecha"]
-            cruze = request.form["cruze"]
-            sexo = request.form["sexo"]
-            peso_actual = request.form.get("peso_actual")
-            fk_productor = request.form["fk_productor"]
-            fk_raza = request.form["fk_raza"]
+            # --- REGISTRAR ---
+            if accion == "registrar":
+                nombre = request.form.get("nombre")
+                fecha = request.form.get("fecha")
+                cruze = request.form.get("cruze") or "Sin conocer"
+                sexo = request.form.get("sexo") or None
+                peso_actual = request.form.get("peso_actual") or None
 
-            cursor.execute("""
-                UPDATE Animales
-                SET nombre=%s, fecha_nacimiento=%s, cruze=%s,
-                    sexo=%s, peso_actual=%s,
-                    fk_productor=%s, fk_raza=%s
-                WHERE pk_animal=%s
-            """, (nombre, fecha, cruze, sexo, peso_actual, fk_productor, fk_raza, pk))
+                # Si el usuario es productor, forzamos el fk_productor desde la sesión
+                if fk_prod_session:
+                    fk_productor = fk_prod_session
+                else:
+                    fk_productor = request.form.get("fk_productor") or None
 
-            if perfil_bytes:
-                cursor.execute("UPDATE Animales SET foto_perfil=%s WHERE pk_animal=%s", (perfil_bytes, pk))
-            if lateral_bytes:
-                cursor.execute("UPDATE Animales SET foto_lateral=%s WHERE pk_animal=%s", (lateral_bytes, pk))
+                fk_raza = request.form.get("fk_raza") or None
 
-            conn.commit()
+                cursor.execute(
+                    """INSERT INTO Animales (nombre, fecha_nacimiento, cruze, sexo, peso_actual, fk_productor, fk_raza, foto_perfil, foto_lateral)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                    (nombre, fecha, cruze, sexo, peso_actual, fk_productor, fk_raza, perfil_bytes, lateral_bytes)
+                )
+                conn.commit()
 
-        # ELIMINAR
-        elif accion == "eliminar":
-            pk = request.form["pk"]
-            cursor.execute("DELETE FROM Animales WHERE pk_animal=%s", (pk,))
-            conn.commit()
+            # --- MODIFICAR ---
+            elif accion == "modificar":
+                pk = request.form.get("pk")
+                nombre = request.form.get("nombre")
+                fecha = request.form.get("fecha")
+                cruze = request.form.get("cruze")
+                sexo = request.form.get("sexo")
+                peso_actual = request.form.get("peso_actual") or None
 
-    # CONSULTA CON NOMBRES
-    cursor.execute("""
-        SELECT 
-            a.pk_animal,
-            a.nombre,
-            a.fecha_nacimiento,
-            a.cruze,
-            p.nombre AS productor,
-            r.nombre AS raza,
-            a.sexo,
-            a.peso_actual
-        FROM Animales a
-        LEFT JOIN Productores p ON a.fk_productor = p.pk_productor
-        LEFT JOIN Razas r ON a.fk_raza = r.pk_raza
-    """)
-    animales = cursor.fetchall()
+                # Solo permitir cambiar fk_productor si el usuario no es productor
+                if fk_prod_session:
+                    fk_productor = fk_prod_session
+                else:
+                    fk_productor = request.form.get("fk_productor") or None
 
-    cursor.execute("SELECT pk_productor, nombre FROM Productores")
-    productores = cursor.fetchall()
+                fk_raza = request.form.get("fk_raza") or None
 
-    cursor.execute("SELECT pk_raza, nombre FROM Razas")
-    razas = cursor.fetchall()
+                cursor.execute(
+                    """UPDATE Animales
+                       SET nombre=%s, fecha_nacimiento=%s, cruze=%s, sexo=%s, peso_actual=%s,
+                           fk_productor=%s, fk_raza=%s
+                       WHERE pk_animal=%s""",
+                    (nombre, fecha, cruze, sexo, peso_actual, fk_productor, fk_raza, pk)
+                )
 
-    conn.close()
+                if perfil_bytes:
+                    cursor.execute("UPDATE Animales SET foto_perfil=%s WHERE pk_animal=%s", (perfil_bytes, pk))
+                if lateral_bytes:
+                    cursor.execute("UPDATE Animales SET foto_lateral=%s WHERE pk_animal=%s", (lateral_bytes, pk))
+
+                conn.commit()
+
+            # --- ELIMINAR ---
+            elif accion == "eliminar":
+                pk = request.form.get("pk")
+                cursor.execute("DELETE FROM Animales WHERE pk_animal=%s", (pk,))
+                conn.commit()
+
+        # --- CONSULTAR LISTA ---
+        # Si el usuario es 'Productor' mostrar solo sus animales
+        if session.get("rol") == "Productor":
+            fk = session.get("fk_productor")
+            cursor.execute(
+                """SELECT a.pk_animal, a.nombre, a.fecha_nacimiento, a.cruze,
+                          p.nombre AS productor, r.nombre AS raza, a.sexo, a.peso_actual
+                   FROM Animales a
+                   LEFT JOIN Productores p ON a.fk_productor = p.pk_productor
+                   LEFT JOIN Razas r ON a.fk_raza = r.pk_raza
+                   WHERE a.fk_productor = %s
+                   ORDER BY a.pk_animal DESC""",
+                (fk,)
+            )
+        else:
+            cursor.execute(
+                """SELECT a.pk_animal, a.nombre, a.fecha_nacimiento, a.cruze,
+                          p.nombre AS productor, r.nombre AS raza, a.sexo, a.peso_actual
+                   FROM Animales a
+                   LEFT JOIN Productores p ON a.fk_productor = p.pk_productor
+                   LEFT JOIN Razas r ON a.fk_raza = r.pk_raza
+                   ORDER BY a.pk_animal DESC"""
+            )
+
+        animales = cursor.fetchall()
+
+        # Datos para selects (si el usuario es productor, puedes ocultar la lista completa si deseas)
+        cursor.execute("SELECT pk_productor, nombre FROM Productores")
+        productores = cursor.fetchall()
+
+        cursor.execute("SELECT pk_raza, nombre FROM Razas")
+        razas = cursor.fetchall()
+
+    except Exception as e:
+        flash(f"Error en módulo Animales: {e}", "danger")
+        animales = []
+        productores = []
+        razas = []
+
+    finally:
+        if conn:
+            conn.close()
 
     return render_template("animales.html", animales=animales, productores=productores, razas=razas)
 
@@ -391,7 +447,7 @@ def mi_productor():
         SELECT pk_productor, nombre, apellido_pat, apellido_mat, UPP, RFC
         FROM Productores
         WHERE pk_productor=%s
-    """, (fk_productor,))
+    """, (fk_productor))
 
     productor = cursor.fetchone()
     conn.close()
@@ -589,7 +645,6 @@ def seguimiento():
     return render_template("seguimiento.html", seguimientos=seguimientos, animales=animales)
 #------------------------------------------------------------------------------------------
 
-
 # ----------------------VENTAS ---------------------------------------------
 @app.route("/ventas", methods=["GET", "POST"])
 def ventas():
@@ -671,6 +726,25 @@ def ventas():
             conn.close()
 
     return render_template("ventas.html", ventas=ventas_list, animales=animales, pesajes=pesajes)
+
+
+
+# ------------ RUTA PARA CALCULAR PRECIO AUTOMÁTICO ----------------
+@app.route("/calcular_precio", methods=["POST"])
+def calcular_precio():
+    data = request.get_json()
+    animal_id = data["animal_id"]
+
+    conn, cursor = conectar_bd()
+    cursor.execute("CALL calcular_precio_animal(%s)", (animal_id,))
+    resultado = cursor.fetchone()  # [Animal, Sexo, Peso, Precio_kg, Total]
+
+    total = resultado[4]  # Total calculado
+
+    conn.close()
+
+    return {"precio": total}
+
 
 
 # ----------------------RAZAS ---------------------------------------------
@@ -850,9 +924,15 @@ def generar_pdf_rearetado():
         pdf.set_xy(120, y_firmas + 2)
         pdf.set_font('Arial', '', 10)
         pdf.cell(60, 5, "Sello Institucional", 0, 0, 'C')
-
         # Salida del PDF
-        response = make_response(pdf.output(dest='S').encode('latin-1'))
+        pdf_data = pdf.output(dest='S')
+        # pdf.output puede devolver str, bytes o bytearray según la versión de fpdf
+        if isinstance(pdf_data, bytearray):
+            pdf_data = bytes(pdf_data)
+        if isinstance(pdf_data, (bytes, memoryview)):
+            response = make_response(pdf_data)
+        else:
+            response = make_response(pdf_data.encode('latin-1')) 
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'inline; filename=Rearetado_{arete_nue}.pdf'
         return response
@@ -863,6 +943,10 @@ def generar_pdf_rearetado():
 @app.route("/album_razas")
 def album_razas():
     return render_template("album_razas.html")
+
+@app.route("/tabla_precio")
+def tabla_precio():
+    return render_template("tabla_precio.html")
 
 # -------------------- PROGRAMA PRINCIPAL --------------------
 if __name__ == "__main__":
