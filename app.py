@@ -362,30 +362,38 @@ def predios():
 
         if accion == "registrar":
             direccion = request.form.get("direccion")
-            estado = request.form.get("estado")
-            municipio = request.form.get("municipio")
-            fk_prod = request.form.get("fk_productor")  # 👈 nuevo
+            fk_estado = request.form.get("fk_estado")
+            fk_municipio = request.form.get("fk_municipio")
+            # Determinar fk_productor: si el usuario es Productor usar la sesión
+            if session.get('rol') == 'Productor' and session.get('fk_productor'):
+                fk_prod = session.get('fk_productor')
+            else:
+                fk_prod = request.form.get("fk_productor")  # 👈 nuevo
 
             sql = """
-                INSERT INTO Predios (direccion, estado, municipio, fk_productor)
+                INSERT INTO Predios (direccion, fk_estado, fk_municipio, fk_productor)
                 VALUES (%s, %s, %s, %s)
             """
-            cursor.execute(sql, (direccion, estado, municipio, fk_prod))
+            cursor.execute(sql, (direccion, fk_estado, fk_municipio, fk_prod))
             conn.commit()
 
         elif accion == "modificar":
             pk = request.form.get("pk")
             direccion = request.form.get("direccion")
-            estado = request.form.get("estado")
-            municipio = request.form.get("municipio")
-            fk_prod = request.form.get("fk_productor")
+            fk_estado = request.form.get("fk_estado")
+            fk_municipio = request.form.get("fk_municipio")
+            # Determinar fk_productor: si el usuario es Productor usar la sesión
+            if session.get('rol') == 'Productor' and session.get('fk_productor'):
+                fk_prod = session.get('fk_productor')
+            else:
+                fk_prod = request.form.get("fk_productor")
 
             sql = """
                 UPDATE Predios
-                SET direccion=%s, estado=%s, municipio=%s, fk_productor=%s
+                SET direccion=%s, fk_estado=%s, fk_municipio=%s, fk_productor=%s
                 WHERE pk_predio=%s
             """
-            cursor.execute(sql, (direccion, estado, municipio, fk_prod, pk))
+            cursor.execute(sql, (direccion, fk_estado, fk_municipio, fk_prod, pk))
             conn.commit()
 
         elif accion == "eliminar":
@@ -398,16 +406,38 @@ def predios():
     # --------------------
     # GET
     # --------------------
+    # Seleccionar nombres de estado y municipio a través de JOINs
     cursor.execute("""
-        SELECT pk_predio, direccion, estado, municipio
-        FROM Predios
-        WHERE fk_productor=%s
+        SELECT p.pk_predio, p.direccion, p.fk_estado, p.fk_municipio,
+               e.Nombre AS estado, m.Nombre AS municipio, p.fk_productor, pr.nombre AS productor, p.nom_rancho
+        FROM Predios p
+        LEFT JOIN Estados e ON p.fk_estado = e.pk_estado
+        LEFT JOIN Municipios m ON p.fk_municipio = m.pk_municipio
+        LEFT JOIN Productores pr ON p.fk_productor = pr.pk_productor
+        WHERE p.fk_productor=%s
     """, (fk_productor,))
     predios = cursor.fetchall()
 
+    # También devolver listas para selects (estados/municipios)
+    cursor.execute("SELECT pk_estado, Nombre FROM Estados")
+    estados = cursor.fetchall()
+
+    cursor.execute("SELECT pk_municipio, Nombre, fk_estado FROM Municipios")
+    municipios = cursor.fetchall()
+
+    # Obtener nombre del productor logueado para mostrar en el formulario
+    productor_nombre = None
+    try:
+        cursor.execute("SELECT nombre FROM Productores WHERE pk_productor=%s", (fk_productor,))
+        row = cursor.fetchone()
+        if row:
+            productor_nombre = row[0]
+    except Exception:
+        productor_nombre = None
+
     conn.close()
 
-    return render_template("predios.html", predios=predios, productores=productores)
+    return render_template("predios.html", predios=predios, productores=productores, estados=estados, municipios=municipios, productor_nombre=productor_nombre)
 
 #----------------Modificar los datos del productor--------------
 @app.route("/mi_productor", methods=["GET", "POST"])
@@ -447,7 +477,7 @@ def mi_productor():
         SELECT pk_productor, nombre, apellido_pat, apellido_mat, UPP, RFC
         FROM Productores
         WHERE pk_productor=%s
-    """, (fk_productor))
+    """, (fk_productor,))
 
     productor = cursor.fetchone()
     conn.close()
