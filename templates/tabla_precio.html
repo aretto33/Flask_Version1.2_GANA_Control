@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="text-center">
+    <img src="{{ url_for('static', filename='img/banner.png') }}" 
+         class="img-fluid mb-4"
+         style="max-height:200px">
+</div>
+
+<h1 class="fw-bold text-center" style="color:#8b5e3c;">Tabla de precios</h1>
+
+<p class="fs-5 text-secondary text-align" style="max-width:1000px; margin:auto;">
+    Para la venta del ganado se implementa una guía de precios acorde al sexo y peso de cada bovino.
+    Para calcular el precio multiplicamos los Peso en Kg x el precio acorde al rango de peso
+</p>
+
+<style>
+/* Paleta café 'cute' */
+:root{
+  --cafe-dark: #5a3e2b;
+  --cafe: #8b5e3c;
+  --cafe-light: #c7a97a;
+  --cream: #f7efe5;
+  --bg: #fbf7f2;
+}
+
+.price-wrap{ max-width:1100px; margin:26px auto 60px; padding:20px; background: linear-gradient(180deg,var(--bg), #fff); border-radius:14px; box-shadow: 0 10px 30px rgba(91,66,47,0.08);} 
+.section-title{ color:var(--cafe); margin-bottom:8px; }
+.price-grid{ display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+.price-card{ flex:1 1 480px; background: linear-gradient(180deg, #fff, var(--cream)); border-radius:12px; padding:14px; box-shadow: 0 6px 18px rgba(102,70,48,0.06); }
+.price-card h3{ color:var(--cafe-dark); margin-bottom:10px; }
+.table-coffee{ width:100%; border-collapse: separate; border-spacing:0; overflow:hidden; border-radius:8px; }
+.table-coffee thead th{ background: linear-gradient(90deg,var(--cafe-light), #e7d6c1); color:var(--cafe-dark); padding:12px 14px; text-align:left; font-weight:700; }
+.table-coffee tbody td{ padding:12px 14px; border-bottom:1px solid rgba(139,94,60,0.08); }
+.table-coffee tbody tr:nth-child(even){ background: rgba(139,94,60,0.03); }
+.price-small{ font-size:0.95rem; color:var(--cafe-dark); }
+.price-amount{ font-weight:700; color:var(--cafe-dark); }
+.price-img{ display:block; margin:18px auto 0; max-width:760px; width:100%; border-radius:10px; box-shadow: 0 12px 30px rgba(91,66,47,0.06); }
+.note{ text-align:center; color:#6b4b36; margin-top:12px; }
+@media (max-width:900px){ .price-grid{ flex-direction:column; } }
+</style>
+
+<div class="price-wrap">
+  <div class="price-grid">
+    <div class="price-card">
+      <h3 class="section-title">Machos</h3>
+      <div class="table-responsive">
+        <table class="table-coffee">
+          <thead>
+            <tr>
+              <th>Tipo Ganado</th>
+              <th>Rango Peso</th>
+              <th class="text-end">Precio (MXN/kg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="price-small">Novillo</td>
+              <td class="price-small">300 - 450 kg</td>
+              <td class="price-amount text-end">$55.00</td>
+            </tr>
+            <tr>
+              <td class="price-small">Toro</td>
+              <td class="price-small">400 - 600 kg</td>
+              <td class="price-amount text-end">$58.00</td>
+            </tr>
+            <tr>
+              <td class="price-small">Novillito</td>
+              <td class="price-small">200 - 300 kg</td>
+              <td class="price-amount text-end">$48.00</td>
+            </tr>
+            <tr>
+              <td class="price-small">Becerro</td>
+              <td class="price-small">0 - 200 kg</td>
+              <td class="price-amount text-end">$40.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Precios referenciales. Contacta <strong style="color:var(--cafe)">Carmen GUSJ</strong> para cotizaciones oficiales.</p>
+    </div>
+
+    <div class="price-card">
+      <h3 class="section-title">Hembras</h3>
+      <div class="table-responsive">
+        <table class="table-coffee">
+          <thead>
+            <tr>
+              <th>Tipo Ganado</th>
+              <th>Rango Peso</th>
+              <th class="text-end">Precio (MXN/kg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="price-small">Vaca</td>
+              <td class="price-small">300 - 450 kg</td>
+              <td class="price-amount text-end">$53.00</td>
+            </tr>
+            <tr>
+              <td class="price-small">Vaquilla</td>
+              <td class="price-small">200 - 350 kg</td>
+              <td class="price-amount text-end">$50.00</td>
+            </tr>
+            <tr>
+              <td class="price-small">Novilla</td>
+              <td class="price-small">250 - 400 kg</td>
+              <td class="price-amount text-end">$51.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Valores estimados por categoría.</p>
+    </div>
+  </div>
+
+  <h3 class="text-center" style="color:var(--cafe); margin-top:18px;">Carmen GUSJ - Centro de Acopio Ganadero</h3>
+  <img src="{{ url_for('static', filename='img/precios.png') }}" alt="Precios" class="price-img">
+</div>
+
+{% endblock %}

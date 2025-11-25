@@ -63,12 +63,17 @@ img.animal-img {
 
         <!-- SELECT DE PRODUCTOR -->
         <label>Productor:</label>
-        <select name="fk_productor" id="fk_productor">
-            <option value="">Seleccione...</option>
-            {% for p in productores %}
-            <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
-            {% endfor %}
-        </select>
+        {% if session.get('rol') == 'Productor' %}
+            <input type="hidden" name="fk_productor" id="fk_productor" value="{{ session.get('fk_productor') }}">
+            <input type="text" class="form-control" value="{% for p in productores %}{% if p[0]==session.get('fk_productor') %}{{ p[1] }}{% endif %}{% endfor %}" readonly>
+        {% else %}
+            <select name="fk_productor" id="fk_productor">
+                <option value="">Seleccione...</option>
+                {% for p in productores %}
+                <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
 
         <!-- SELECT DE RAZA -->
         <label>Raza:</label>
@@ -90,9 +95,7 @@ img.animal-img {
             <option value="M">Macho</option>
             <option value="H">Hembra</option>
         </select>
-        <label>Peso actual (kg):</label>
-        <input type="number" step="0.1" name="peso_actual" id="peso_actual">
-
+        
         <button class="btn" name="accion" value="registrar">Registrar</button>
                 
     </form>
@@ -171,9 +174,13 @@ function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo, peso)
     document.getElementById("fecha").value = fecha;
     document.getElementById("cruze").value = cruze;
 
-    // Debe coincidir con el VALUE en el select
-    document.getElementById("fk_productor").value = productor;
-    document.getElementById("fk_raza").value = raza;
+    // Set productor (puede venir id o nombre)
+    const prodEl = document.getElementById("fk_productor");
+    setSelectOrInputValue(prodEl, productor);
+
+    // Raza sí es id en las opciones
+    const razaEl = document.getElementById("fk_raza");
+    setSelectOrInputValue(razaEl, raza);
 
     document.getElementById("sexo").value = sexo;
     document.getElementById("peso_actual").value = peso;
@@ -193,6 +200,33 @@ function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo, peso)
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+
+<script>
+function setSelectOrInputValue(el, value) {
+    if (!el) return;
+    const tag = el.tagName ? el.tagName.toUpperCase() : null;
+    if (tag === 'SELECT') {
+        // intentar asignar por value
+        if (el.querySelector('option[value="' + value + '"]')) {
+            el.value = value;
+            return;
+        }
+        // intentar por texto (buscar coincidencia)
+        for (let i=0;i<el.options.length;i++) {
+            const opt = el.options[i];
+            if (opt.text.trim() === value || opt.text.includes(value)) {
+                el.value = opt.value;
+                return;
+            }
+        }
+        // no encontrado -> dejar vacío
+        el.value = '';
+    } else {
+        // input hidden o text
+        el.value = value;
+    }
 }
 </script>
 {% endblock %}

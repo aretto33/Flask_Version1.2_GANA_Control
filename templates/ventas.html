@@ -46,19 +46,11 @@ input, select {
             {% endfor %}
         </select>
 
-        <label>Pesaje:</label>
-        <select name="fk_pesaje" id="fk_pesaje">
-            <option value="">Seleccione...</option>
-            {% for p in pesajes %}
-            <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }} kg</option>
-            {% endfor %}
-        </select>
-
         <label>Clave:</label>
         <input type="text" name="clave" id="clave" required>
 
-        <label>Precio:</label>
-        <input type="number" step="0.01" name="precio" id="precio" required>
+        <label>Precio Total (automático):</label>
+        <input type="number" step="0.01" name="precio" id="precio" readonly required>
 
         <label>Fecha de venta:</label>
         <input type="date" name="fecha_venta" id="fecha_venta" required>
@@ -67,64 +59,66 @@ input, select {
     </form>
 </div>
 
+<script>
+// Cuando seleccionan un animal → calcular precio
+document.getElementById("fk_animal").addEventListener("change", function() {
+    let animalId = this.value;
+
+    if (animalId === "") {
+        document.getElementById("precio").value = "";
+        return;
+    }
+
+    fetch("/calcular_precio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ animal_id: animalId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("precio").value = data.precio ?? "";
+    })
+    .catch(err => console.error(err));
+});
+</script>
+
 <div class="table-box">
     <h3>Ventas Registradas</h3>
 
     <table border="1" width="100%" cellpadding="6">
-        <tr style="background:#d8c2a8;">
+        <tr>
             <th>ID</th>
-            <th>Animal</th>
-            <th>Pesaje (kg)</th>
+            <th>ID Animal</th>
             <th>Clave</th>
-            <th>Precio</th>
-            <th>Fecha Venta</th>
+            <th>Precio Total</th>
+            <th>Fecha de Venta</th>
             <th>Acciones</th>
         </tr>
 
         {% for v in ventas %}
         <tr>
             <td>{{ v[0] }}</td>
-            <td>{% if v[6] %}{{ v[6] }}{% else %}Sin animal{% endif %}</td>
-            <td>{% if v[7] %}{{ v[7] }}{% else %}Sin pesaje{% endif %}</td>
+            <td>{{ v[1] }}</td>
             <td>{{ v[3] }}</td>
-            <td>${{ v[4] }}</td>
+            <td>{{ v[4] }}</td>
             <td>{{ v[5] }}</td>
+
             <td>
-                <button class="btn btn-small" onclick="cargarFormulario('{{ v[0] }}','{{ v[1] }}','{{ v[2] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">Modificar</button>
+                <button class="btn btn-small"
+                        onclick="cargarFormulario('{{ v[0] }}','{{ v[1] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">
+                    Modificar
+                </button>
+
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="pk" value="{{ v[0] }}">
-                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">Eliminar</button>
+                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">
+                        Eliminar
+                    </button>
                 </form>
             </td>
         </tr>
         {% endfor %}
     </table>
 </div>
-
-<script>
-function cargarFormulario(id, fk_animal, fk_pesaje, clave, precio, fecha_venta) {
-    document.getElementById('pk').value = id;
-    document.getElementById('fk_animal').value = fk_animal;
-    document.getElementById('fk_pesaje').value = fk_pesaje;
-    document.getElementById('clave').value = clave;
-    document.getElementById('precio').value = precio;
-    document.getElementById('fecha_venta').value = fecha_venta;
-
-    let form = document.getElementById('ventaForm');
-    let existing = document.getElementById('btnModificar');
-
-    if (!existing) {
-        let btn = document.createElement('button');
-        btn.innerText = 'Modificar';
-        btn.className = 'btn';
-        btn.name = 'accion';
-        btn.value = 'modificar';
-        btn.id = 'btnModificar';
-        form.appendChild(btn);
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-</script>
 
 {% endblock %}

@@ -23,19 +23,6 @@
                 <label><input type="radio" name="rol" value="Comprador" onclick="mostrarProductores(false)"> Comprador</label>
             </div>
 
-            <!-- SELECT DE PRODUCTORES (SE OCULTA POR DEFAULT) -->
-            <div id="selectProductores" class="mb-3" style="display: none;">
-                <label>Seleccione productor:</label>
-                <select name="fk_productor" class="form-control">
-                <option value="">-- Seleccione --</option>
-                {% for p in productores %}
-                    <option value="{{ p[0] }}">{{ p[1] }}</option>
-                {% endfor %}
-                </select>
-
-
-            </div>
-
             <button class="btn btn-primary w-100">Ingresar</button>
         </form>
 

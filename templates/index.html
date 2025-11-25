@@ -1,31 +1,99 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+/* Marco 'raro' para imágenes */
+.fancy-frame {
+  position: relative;
+  display: inline-block;
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fff 0%, #f7efe5 100%);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12), inset 0 3px 10px rgba(255,255,255,0.6);
+  transition: transform .25s, box-shadow .25s;
+  overflow: hidden;
+}
+.fancy-frame img {
+  display: block;
+  border-radius: 8px;
+  width: 100%;
+  height: auto;
+  transform: rotate(-2deg);
+  transition: transform .25s;
+}
+.fancy-frame:before,
+.fancy-frame:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: 14px;
+}
+.fancy-frame:before {
+  inset: -8px;
+  background: linear-gradient(90deg, rgba(215,179,147,0.10), rgba(215,179,147,0));
+  transform: rotate(-3deg);
+  z-index: -1;
+}
+.fancy-frame:after {
+  width: 48px;
+  height: 48px;
+  right: 8px;
+  bottom: 8px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.06);
+}
+.fancy-frame:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+}
+.fancy-frame:hover img { transform: rotate(0deg) scale(1.02); }
+@media (max-width:767.98px) {
+  .fancy-frame { padding: 8px; }
+  .fancy-frame:before { inset: -6px; }
+}
+</style>
+
 <div class="text-center">
     <img src="{{ url_for('static', filename='img/banner.png') }}" 
          class="img-fluid mb-4"
          style="max-height:200px">
 </div>
 
-<h1 class="text-primary fw-bold text-center">Bienvenido a GANA_CONTROL</h1>
+<h1 class="text-primary fw-bold text-center">Bienvenido a MIGANADITO_CONTROL
+</h1>
 <p class="fs-5 text-secondary text-center">Sistema integral de gestión ganadera</p>
 
 <!-- CONTENEDOR PRINCIPAL -->
 <div class="d-flex justify-content-center align-items-center mt-4" style="gap: 30px; flex-wrap: wrap;">
 
-    <!-- Imagen principal -->
-    <img src="{{ url_for('static', filename='img/principal.png') }}" 
-         class="img-fluid" 
-         style="max-width:400px; border-radius: 10px;">
+    <!-- Imagenes apiladas -->
+    <div style="max-width:400px; text-align:center;">
+        <div class="fancy-frame mb-3">
+            <img src="{{ url_for('static', filename='img/principal.png') }}" 
+                 alt="Principal">
+        </div>
+        <div class="fancy-frame">
+            <img src="{{ url_for('static', filename='img/vaca2.png') }}" 
+                 alt="Vaca">
+        </div>
+    </div>
 
     <!-- Descripción -->
     <div style="max-width:400px; text-align: justify;">
         <p>
-            GANA_CONTROL es una herramienta diseñada para optimizar la administración ganadera.
-            Permite registrar animales, gestionar alimentación, ventas y trazabilidad en una base 
-            de datos centralizada, ofreciendo un control completo y eficiente para productores.
+            MIGANADITO_CONTROL es una herramienta diseñada para optimizar la administración ganadera de los micro-productores Tabasqueños.
+            Permite registrar animales, gestionar los nacimientos, ventas y trazabilidad en una base 
+            de datos centralizada, ofreciendo un control completo y eficiente para micro-productores ofreciendo la función de generar PDF para los trámites importantes en SIINIGA.
+
         </p>
+        <br>
+        <p>
+            Tabasco sólo aporta un 1.8% de producción Ganadera a nivel nacional, sin embargo la ganadería es un medio principal económico de muchas familias tabasqueñas. La tecnología y ganaderia en Tabasco en muy poco implementada o casi n o se desarrollan software de ingenieros tabasqueños para este sector, por lo que hemos decidido empezar este proyecto DEMO.
+            Para su elaboración hemos indagado y de mano con micro-ganaderos, encontrar una solución a la trazabilidad ganadera tabasqueña.
+        </p>
+        <br>
         <a href= "{{ url_for('album_razas') }}" class="btn-cafe">Identifica el tipo de raza</a>
+        <a href= "{{ url_for('tabla_precio') }}" class="btn-cafe">Tablas de Precios</a>
     </div>
 
 
