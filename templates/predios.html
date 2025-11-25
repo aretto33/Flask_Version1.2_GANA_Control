@@ -49,21 +49,37 @@ input, select {
         <input type="text" name="direccion" id="direccion" required>
 
         <label>Estado:</label>
-        <input type="text" name="estado" id="estado" required>
-
-        <label>Municipio:</label>
-        <input type="text" name="municipio" id="municipio" required>
-
-        <!-- SELECT DE PRODUCTOR -->
-        <label>Productor:</label>
-        <select name="fk_productor" id="fk_productor">
-            <option value="">Seleccione...</option>
-            {% for p in productores %}
-            <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
+        <select name="fk_estado" id="fk_estado" required>
+            <option value="">Seleccione estado...</option>
+            {% for e in estados %}
+            <option value="{{ e[0] }}">{{ e[1] }}</option>
             {% endfor %}
         </select>
 
-        <button class="btn" name="accion" value="registrar">Registrar</button>
+        <label>Municipio:</label>
+        <select name="fk_municipio" id="fk_municipio" required>
+            <option value="">Seleccione municipio...</option>
+            {% for m in municipios %}
+            <option value="{{ m[0] }}" data-estado="{{ m[2] }}">{{ m[1] }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- SELECT DE PRODUCTOR -->
+        {% if session.get('rol') == 'Productor' %}
+            <input type="hidden" name="fk_productor" id="fk_productor" value="{{ session.get('fk_productor') }}">
+            <label>Productor:</label>
+            <input type="text" value="{{ productor_nombre if productor_nombre else ('Productor ID: ' ~ session.get('fk_productor')) }}" disabled>
+        {% else %}
+            <label>Productor:</label>
+            <select name="fk_productor" id="fk_productor">
+                <option value="">Seleccione...</option>
+                {% for p in productores %}
+                <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+
+        <button class="btn" name="accion" value="registrar" id="btnRegistrar">Registrar</button>
     </form>
 </div>
 
@@ -78,6 +94,8 @@ input, select {
                 <th>Dirección</th>
                 <th>Estado</th>
                 <th>Municipio</th>
+                <th>Productor</th>
+                <th>Rancho</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -87,8 +105,10 @@ input, select {
         <tr>
             <td>{{ p[0] }}</td>
             <td>{{ p[1] }}</td>
-            <td>{{ p[2] }}</td>
-            <td>{{ p[3] }}</td>
+            <td>{{ p[4] }}</td>
+            <td>{{ p[5] }}</td>
+            <td>{{ p[7] if p[7] else '—' }}</td>
+            <td>{{ p[8] if p[8] else '—' }}</td>
 
             <td>
                 <button class="btn btn-small"
@@ -111,24 +131,49 @@ input, select {
 </div>
 
 <script>
-function cargarFormulario(id, direccion, estado, municipio) {
+function filtrarMunicipiosPorEstado(estadoId) {
+    const opciones = document.querySelectorAll('#fk_municipio option');
+    opciones.forEach(opt => {
+        const mEstado = opt.getAttribute('data-estado');
+        if (!mEstado || mEstado === '') return; // la opción placeholder
+        opt.style.display = (mEstado === String(estadoId)) ? 'block' : 'none';
+    });
+    // Reset seleccionado
+    document.getElementById('fk_municipio').value = '';
+}
+
+// Cuando cambia el estado, filtrar municipios
+document.getElementById('fk_estado').addEventListener('change', function(){
+    filtrarMunicipiosPorEstado(this.value);
+});
+
+function cargarFormulario(id, direccion, fk_estado, fk_municipio) {
     document.getElementById("pk").value = id;
     document.getElementById("direccion").value = direccion;
-    document.getElementById("estado").value = estado;
-    document.getElementById("municipio").value = municipio;
+    // Preseleccionar estado
+    if (fk_estado) {
+        document.getElementById('fk_estado').value = fk_estado;
+        filtrarMunicipiosPorEstado(fk_estado);
+    }
+    // Preseleccionar municipio (se asume que ya está filtrado)
+    if (fk_municipio) {
+        document.getElementById('fk_municipio').value = fk_municipio;
+    }
 
     // Cambiar botón principal a "Modificar"
     let form = document.getElementById("predioForm");
 
-    let existing = document.getElementById("btnModificar");
-    if (!existing) {
+    let existingMod = document.getElementById("btnModificar");
+    if (!existingMod) {
         let btn = document.createElement("button");
         btn.innerText = "Modificar";
         btn.className = "btn";
         btn.name = "accion";
         btn.value = "modificar";
         btn.id = "btnModificar";
-        form.appendChild(btn);
+        // Insert before registrar button
+        let registrar = document.getElementById('btnRegistrar');
+        registrar.insertAdjacentElement('afterend', btn);
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
