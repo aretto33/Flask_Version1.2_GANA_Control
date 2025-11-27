@@ -28,7 +28,6 @@ input, select {
 .btn:hover {
     background: #6b452e;
 }
-
 img.animal-img {
     width: 80px;
     height: 80px;
@@ -41,6 +40,32 @@ img.animal-img {
     font-size: 0.8rem;
 }
 </style>
+<style>
+.detalles {
+    display: none;
+    background: #f9f2e8;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+    border: 1px solid #d6c2b0;
+}
+.detalles.mostrar {
+    display: block;
+}
+.btn-ver {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    background: #3e6db5;
+    color:white;
+    border-radius:6px;
+    border:none;
+    cursor:pointer;
+}
+.btn-ver:hover {
+    background:#305692;
+}
+</style>
+
 
 <h2>Gestión de Animales</h2>
 
@@ -96,11 +121,12 @@ img.animal-img {
             <option value="H">Hembra</option>
         </select>
         
-        <button class="btn" name="accion" value="registrar">Registrar</button>
+        <button class="btn" name="accion" value="registrar" id="btnRegistrar">Registrar</button>
                 
     </form>
 </div>
-<!-- TABLA -->
+
+ <!-- TABLA -->
 <div class="animal-table">
     <h3>Animales Registrados</h3>
 
@@ -121,42 +147,57 @@ img.animal-img {
 
         {% for a in animales %}
         <tr>
-            <td>{{ a[0] }}</td> <!-- ID -->
-            <td>{{ a[1] }}</td> <!-- Nombre -->
-            <td>{{ a[2] }}</td> <!-- Fecha -->
-            <td>{{ a[3] }}</td> <!-- Cruze -->
-            <td>{{ a[4] }}</td> <!-- Nombre Productor -->
-            <td>{{ a[5] }}</td> <!-- Nombre Raza -->
-            <td>{{ a[6] }}</td> <!-- Sexo -->
-            <td>{{ a[7] }}</td> <!-- Peso -->
+            <td>{{ a[0] }}</td>
+            <td>{{ a[1] }}</td>
+            <td>{{ a[2] }}</td>
+            <td>{{ a[3] }}</td>
+            <td>{{ a[4] }}</td>
+            <td>{{ a[5] }}</td>
+            <td>{{ a[6] }}</td>
+            <td>{{ a[7] }}</td>
 
-            <!-- FOTO PERFIL -->
+            <!-- FOTOS -->
             <td>
                 <img class="animal-img" 
                      src="{{ url_for('imagen_animal', id=a[0], tipo='foto_perfil') }}"
                      onerror="this.style.display='none'">
             </td>
 
-            <!-- FOTO LATERAL -->
             <td>
                 <img class="animal-img" 
                      src="{{ url_for('imagen_animal', id=a[0], tipo='foto_lateral') }}"
                      onerror="this.style.display='none'">
             </td>
 
-            <!-- BOTONES DE ACCIÓN -->
+            <!-- ACCIONES -->
             <td>
-                <button class="btn btn-small" 
-                        onclick="cargarFormulario(
-                            '{{ a[0] }}','{{ a[1] }}','{{ a[2] }}','{{ a[3] }}',
-                            '{{ a[4] }}','{{ a[5] }}','{{ a[6] }}','{{ a[7] }}'
-                        )">
+
+                <!-- BOTÓN VER -->
+                <!-- Este botón manda todos los datos al panel flotante -->
+                <button class="btn-ver"
+                        onclick='showFloatingDetails({{ {
+                            "id":a[0], "nombre":a[1], "fecha":a[2], "cruze":a[3],
+                            "productor":a[4], "raza":a[5], "sexo":a[6], "peso":a[7]
+                        } | tojson }})'>
+                    Ver
+                </button>
+
+                <!-- BOTÓN MODIFICAR -->
+                <!-- Llama a la función cargarFormulario -->
+                <button class="btn btn-small"
+                    onclick="cargarFormulario(
+                        '{{ a[0] }}','{{ a[1] }}','{{ a[2] }}','{{ a[3] }}',
+                        '{{ a[4] }}','{{ a[5] }}','{{ a[6] }}'
+                    )">
                     Modificar
                 </button>
 
+                <!-- BOTÓN ELIMINAR -->
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="pk" value="{{ a[0] }}">
-                    <button class="btn btn-small" name="accion" value="eliminar"
+                    <button class="btn btn-small"
+                            name="accion"
+                            value="eliminar"
                             style="background:#a63c3c;">
                         Eliminar
                     </button>
@@ -168,24 +209,25 @@ img.animal-img {
 </div>
 
 <script>
-function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo, peso) {
+function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo) {
     document.getElementById("pk").value = id;
     document.getElementById("nombre").value = nombre;
     document.getElementById("fecha").value = fecha;
     document.getElementById("cruze").value = cruze;
 
-    // Set productor (puede venir id o nombre)
     const prodEl = document.getElementById("fk_productor");
     setSelectOrInputValue(prodEl, productor);
 
-    // Raza sí es id en las opciones
     const razaEl = document.getElementById("fk_raza");
     setSelectOrInputValue(razaEl, raza);
 
     document.getElementById("sexo").value = sexo;
-    document.getElementById("peso_actual").value = peso;
 
-    // Botón modificar
+    // Ocultar registrar
+    let registrarBtn = document.getElementById("btnRegistrar");
+    registrarBtn.style.display = "none";
+
+    // Crear botón modificar si no existe
     let form = document.getElementById("animalForm");
     let existing = document.getElementById("btnModificar");
 
@@ -196,24 +238,22 @@ function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo, peso)
         btn.name = "accion";
         btn.value = "modificar";
         btn.id = "btnModificar";
+        btn.style.marginLeft = "10px";
         form.appendChild(btn);
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
-</script>
 
-<script>
 function setSelectOrInputValue(el, value) {
     if (!el) return;
     const tag = el.tagName ? el.tagName.toUpperCase() : null;
+
     if (tag === 'SELECT') {
-        // intentar asignar por value
         if (el.querySelector('option[value="' + value + '"]')) {
             el.value = value;
             return;
         }
-        // intentar por texto (buscar coincidencia)
         for (let i=0;i<el.options.length;i++) {
             const opt = el.options[i];
             if (opt.text.trim() === value || opt.text.includes(value)) {
@@ -221,12 +261,148 @@ function setSelectOrInputValue(el, value) {
                 return;
             }
         }
-        // no encontrado -> dejar vacío
         el.value = '';
     } else {
-        // input hidden o text
         el.value = value;
     }
 }
 </script>
+<script>
+function toggleDetalles(id) {
+    const fila = document.getElementById("detalles-" + id);
+    fila.classList.toggle("mostrar");
+}
+</script>
+
+<!-- Floating details panel (overlay) -->
+<style>
+.floating-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.floating-card {
+    background: white;
+    width: 90%;
+    max-width: 900px;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    overflow: auto;
+}
+.floating-card .close-btn {
+    float: right;
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+.floating-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.floating-grid img { width: 100%; height: auto; border-radius: 8px; object-fit: cover; }
+.floating-meta p { margin: 6px 0; }
+@media (max-width: 700px) {
+    .floating-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div id="floating-details" class="floating-overlay" role="dialog" aria-hidden="true">
+    <div class="floating-card" role="document">
+        <button class="close-btn" aria-label="Cerrar" onclick="closeFloatingDetails()">✕</button>
+        <h3 id="float-nombre">Animal</h3>
+        <div class="floating-grid">
+            <div>
+                <img id="float-perfil" src="" alt="Foto perfil">
+                <div style="height:12px"></div>
+                <img id="float-lateral" src="" alt="Foto lateral">
+            </div>
+            <div class="floating-meta">
+                <p><strong>ID:</strong> <span id="float-id"></span></p>
+                <p><strong>Fecha Nac.:</strong> <span id="float-fecha"></span></p>
+                <p><strong>Cruze:</strong> <span id="float-cruze"></span></p>
+                <p><strong>Productor:</strong> <span id="float-productor"></span></p>
+                <p><strong>Raza:</strong> <span id="float-raza"></span></p>
+                <p><strong>Sexo:</strong> <span id="float-sexo"></span></p>
+                <p><strong>Peso actual:</strong> <span id="float-peso"></span> kg</p>
+                <div style="margin-top:12px">
+                    <button class="btn" id="float-modificar" onclick="submitModificarFromFloat()">Modificar</button>
+                    <form id="float-eliminar-form" method="POST" style="display:inline; margin-left:8px;">
+                        <input type="hidden" name="pk" id="float-eliminar-pk">
+                        <button class="btn" name="accion" value="eliminar" style="background:#a63c3c;">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showFloatingDetails(obj) {
+    // aceptar tanto array como objeto
+    if (Array.isArray(obj)) {
+        obj = {
+            id: obj[0], nombre: obj[1], fecha: obj[2], cruze: obj[3],
+            productor: obj[4], raza: obj[5], sexo: obj[6], peso: obj[7]
+        };
+    }
+
+    const overlay = document.getElementById('floating-details');
+    document.getElementById('float-id').innerText = obj.id || '';
+    document.getElementById('float-nombre').innerText = obj.nombre || '';
+    document.getElementById('float-fecha').innerText = obj.fecha || '';
+    document.getElementById('float-cruze').innerText = obj.cruze || '';
+    document.getElementById('float-productor').innerText = obj.productor || '';
+    document.getElementById('float-raza').innerText = obj.raza || '';
+    document.getElementById('float-sexo').innerText = obj.sexo || '';
+    document.getElementById('float-peso').innerText = obj.peso || '';
+
+    // imágenes desde la ruta conocida
+    document.getElementById('float-perfil').src = '/imagen_animal/' + obj.id + '/foto_perfil';
+    document.getElementById('float-lateral').src = '/imagen_animal/' + obj.id + '/foto_lateral';
+
+    // preparar acciones
+    document.getElementById('float-eliminar-pk').value = obj.id;
+
+    // modificar: cuando el usuario pulse modificar, cargamos el formulario principal y scrolleamos
+    window._float_mod_obj = obj; // guardamos temporal
+
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeFloatingDetails() {
+    const overlay = document.getElementById('floating-details');
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+}
+
+function submitModificarFromFloat() {
+    const obj = window._float_mod_obj || {};
+    // usar la función cargarFormulario existente para rellenar el form principal
+    cargarFormulario(obj.id, obj.nombre, obj.fecha, obj.cruze, obj.productor, obj.raza, obj.sexo);
+    closeFloatingDetails();
+}
+
+// cerrar overlay con ESC
+document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeFloatingDetails();
+});
+
+// cerrar cliqueando fuera de la tarjeta
+document.getElementById('floating-details').addEventListener('click', function(e){
+    if(e.target === this) closeFloatingDetails();
+});
+</script>
+
+
 {% endblock %}

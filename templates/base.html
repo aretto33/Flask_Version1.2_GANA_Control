@@ -32,6 +32,9 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('inicio') }}" style="color:#f7efe5;">Inicio</a>
                 </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('opiniones') }}" style="color:#f7efe5;">Sus opiniones</a>
+                </li>
 
                 {% if not session.get('usuario') %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}" style="color:#f7efe5;">Iniciar sesión</a></li>

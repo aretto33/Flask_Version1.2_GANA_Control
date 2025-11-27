@@ -1,49 +1,143 @@
 {% extends "base.html" %}
 {% block content %}
-
 <style>
-.bg-box {
-    background: #e7d7c1;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
+/* ===== CONTENEDORES ===== */
+.form-box,
+.table-box {
+    background: #f5e8d8;
+    padding: 22px;
+    border-radius: 14px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ===== FORMULARIOS ===== */
+label {
+    font-weight: 600;
+    color: #5b3b23;
 }
 
 input, select {
     width: 100%;
-    padding: 10px;
-    border-radius: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
     border: 1px solid #bca58b;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
+/* ===== BOTONES ===== */
 .btn {
     background: #8b5e3c;
     color: white;
-    padding: 10px 15px;
-    border-radius: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
     border: none;
     cursor: pointer;
+    font-weight: 600;
 }
+
 .btn:hover {
     background: #6b452e;
 }
 
 .btn-small {
-    padding: 6px 10px;
+    padding: 6px 12px;
     font-size: 0.8rem;
+}
+
+.btn-ver {
+    background: #4a6fa5;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+}
+
+.btn-ver:hover {
+    background: #345984;
+}
+
+/* ===== TABLA ===== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #d8c2a8;
+    color: #4b2f1a;
+}
+
+th, td {
+    padding: 10px;
+}
+
+tr:hover {
+    background: rgba(0,0,0,0.04);
+}
+/* ===== BORDE CAFE TABLA ===== */
+.table-box table {
+    border: 2px solid #8b5e3c;       /* línea café exterior */
+    border-radius: 10px;
+    overflow: hidden;                /* respeta borde redondeado */
+}
+
+.table-box th,
+.table-box td {
+    border-bottom: 1px solid #c9b099; /* líneas internas café claro */
+}
+
+.table-box tr:last-child td {
+    border-bottom: none;
+}
+
+/* ===== OVERLAY ===== */
+.floating-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* ===== TARJETA ===== */
+.floating-card {
+    background: #fff;
+    width: 95%;
+    max-width: 700px;
+    border-radius: 16px;
+    padding: 24px;
+    animation: slideUp .25s ease;
+    box-shadow: 0 14px 35px rgba(0,0,0,.25);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0 }
+    to { transform: translateY(0); opacity: 1 }
+}
+
+/* ===== CERRAR ===== */
+.floating-close {
+    float: right;
+    font-size: 1.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
 }
 </style>
 
 <h2>Registro SINIGA</h2>
 
-<div class="bg-box">
+<!-- FORMULARIO -->
+<div class="form-box">
     <h3>Registrar / Modificar Registro</h3>
 
     <form method="POST" id="formSiniga">
         <input type="hidden" id="pk" name="pk">
 
-        <label>Animal:</label>
+        <label>Animal</label>
         <select id="fk_animal" name="fk_animal" required>
             <option value="">Seleccione...</option>
             {% for a in animales %}
@@ -51,21 +145,24 @@ input, select {
             {% endfor %}
         </select>
 
-        <label>Arete:</label>
+        <label>Arete</label>
         <input type="text" id="arete" name="arete" required>
 
-        <button class="btn" name="accion" value="registrar">Registrar</button>
+        <div>
+            <button class="btn" name="accion" value="registrar">Registrar</button>
+        </div>
     </form>
 </div>
 
-<div class="bg-box">
+<!-- TABLA -->
+<div class="table-box">
     <h3>Registros</h3>
 
-    <table border="1" width="100%" cellpadding="6">
+    <table>
         <tr>
             <th>ID</th>
             <th>ID Animal</th>
-            <th>Nombre Animal</th>
+            <th>Nombre</th>
             <th>Arete</th>
             <th>Acciones</th>
         </tr>
@@ -84,14 +181,33 @@ input, select {
 
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="pk" value="{{ r[0] }}">
-                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">
+                    <button class="btn btn-small" name="accion" value="eliminar"
+                        style="background:#a63c3c;">
                         Eliminar
                     </button>
                 </form>
+
+                <button class="btn-ver"
+                    onclick='showFloatingDetails({{ [r[0], r[1], r[3], r[2]] | tojson }})'>
+                    Ver
+                </button>
             </td>
         </tr>
         {% endfor %}
     </table>
+</div>
+
+<!-- FLOATING CARD -->
+<div id="floating-details" class="floating-overlay">
+    <div class="floating-card">
+        <button class="floating-close" onclick="closeFloatingDetails()">&times;</button>
+
+        <h3>Detalles del registro</h3>
+        <p><strong>ID:</strong> <span id="float-id"></span></p>
+        <p><strong>Animal:</strong> <span id="float-animal"></span></p>
+        <p><strong>Nombre:</strong> <span id="float-nombre"></span></p>
+        <p><strong>Arete:</strong> <span id="float-arete"></span></p>
+    </div>
 </div>
 
 <script>
@@ -100,19 +216,30 @@ function cargar(id, animal, arete){
     document.getElementById("fk_animal").value = animal;
     document.getElementById("arete").value = arete;
 
-    let form = document.getElementById("formSiniga");
-
     if (!document.getElementById("btnMod")) {
-        let b = document.createElement("button");
-        b.id = "btnMod";
-        b.className = "btn";
-        b.innerText = "Modificar";
-        b.name = "accion";
-        b.value = "modificar";
-        form.appendChild(b);
+        let btn = document.createElement("button");
+        btn.id = "btnMod";
+        btn.className = "btn";
+        btn.name = "accion";
+        btn.value = "modificar";
+        btn.innerText = "Modificar";
+        document.getElementById("formSiniga").appendChild(btn);
     }
 
-    window.scrollTo({top: 0, behavior: "smooth"});
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showFloatingDetails(data){
+    document.getElementById("float-id").innerText = data[0];
+    document.getElementById("float-animal").innerText = data[1];
+    document.getElementById("float-nombre").innerText = data[2];
+    document.getElementById("float-arete").innerText = data[3];
+
+    document.getElementById("floating-details").style.display = "flex";
+}
+
+function closeFloatingDetails(){
+    document.getElementById("floating-details").style.display = "none";
 }
 </script>
 

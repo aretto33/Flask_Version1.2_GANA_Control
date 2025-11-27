@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-
+<!--   Estilos para las tablas y form-->
 <style>
-.animal-form, .animal-table {
+
+.form-box, .table-box {
     background: #f5e8d8;
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 25px;
 }
-
 input, select {
     width: 100%;
     padding: 10px;
@@ -16,7 +16,6 @@ input, select {
     border: 1px solid #bca58b;
     margin-bottom: 12px;
 }
-
 .btn {
     background: #8b5e3c;
     color: white;
@@ -25,20 +24,20 @@ input, select {
     border: none;
     cursor: pointer;
 }
+.btn-small {
+    padding: 6px 10px;
+    font-size: .8rem;
+}
 .btn:hover {
     background: #6b452e;
 }
 
-.btn-small {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-}
 </style>
 
 <h2>Gestión de Predios</h2>
 
 <!-- FORMULARIO -->
-<div class="animal-form">
+<div class="animal-box">
     <h3>Registrar / Modificar Predio</h3>
 
     <form method="POST" id="predioForm">
@@ -84,7 +83,7 @@ input, select {
 </div>
 
 <!-- TABLA -->
-<div class="animal-table">
+<div class="table-box">
     <h3>Predios Registrados</h3>
 
     <table border="1" width="100%" cellpadding="6">
@@ -111,6 +110,8 @@ input, select {
             <td>{{ p[8] if p[8] else '—' }}</td>
 
             <td>
+                <button class="btn btn-small btn-ver" onclick='showPredioDetails({{ [p[0], p[1], p[4], p[5], p[7], p[8]] | tojson }})' style="margin-right:6px; background:#3e6db5; color:white;">Ver</button>
+
                 <button class="btn btn-small"
                         onclick="cargarFormulario('{{ p[0] }}','{{ p[1] }}','{{ p[2] }}','{{ p[3] }}')">
                     Modificar
@@ -128,18 +129,50 @@ input, select {
         {% endfor %}
         </tbody>
     </table>
+
+    <!-- Floating details panel for Predio -->
+    <style>
+    .pesaje-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999; }
+    .pesaje-card { background:#fff; width:90%; max-width:640px; border-radius:10px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+    .pesaje-card .close-btn { float:right; background:transparent; border:none; font-size:1.2rem; cursor:pointer; }
+    .pesaje-card p{ margin:8px 0 }
+    </style>
+
+    <div id="predio-details" class="pesaje-overlay" role="dialog" aria-hidden="true">
+      <div class="pesaje-card" role="document">
+        <button class="close-btn" onclick="closePredioDetails()">✕</button>
+        <h4>Detalle de Predio</h4>
+        <p><strong>ID:</strong> <span id="d-id"></span></p>
+        <p><strong>Dirección:</strong> <span id="d-direccion"></span></p>
+        <p><strong>Estado:</strong> <span id="d-estado"></span></p>
+        <p><strong>Municipio:</strong> <span id="d-municipio"></span></p>
+        <p><strong>Productor:</strong> <span id="d-productor"></span></p>
+        <p><strong>Rancho:</strong> <span id="d-rancho"></span></p>
+        <div style="margin-top:12px">
+            <button class="btn" id="predio-mod-btn" onclick="submitPredioModificarFromFloat()">Modificar</button>
+            <form id="predio-eliminar-form" method="POST" style="display:inline; margin-left:8px;">
+                <input type="hidden" name="pk" id="predio-eliminar-pk">
+                <button class="btn" name="accion" value="eliminar" style="background:#a63c3c; color:white;">Eliminar</button>
+            </form>
+        </div>
+      </div>
+    </div>
+
 </div>
 
 <script>
 function filtrarMunicipiosPorEstado(estadoId) {
     const opciones = document.querySelectorAll('#fk_municipio option');
     opciones.forEach(opt => {
+        if (!opt.value) { opt.hidden = false; opt.disabled = false; return; } // placeholder
         const mEstado = opt.getAttribute('data-estado');
-        if (!mEstado || mEstado === '') return; // la opción placeholder
-        opt.style.display = (mEstado === String(estadoId)) ? 'block' : 'none';
+        const match = (String(mEstado) === String(estadoId));
+        opt.hidden = !match;
+        opt.disabled = !match;
     });
     // Reset seleccionado
-    document.getElementById('fk_municipio').value = '';
+    const sel = document.getElementById('fk_municipio');
+    sel.value = '';
 }
 
 // Cuando cambia el estado, filtrar municipios
@@ -147,37 +180,96 @@ document.getElementById('fk_estado').addEventListener('change', function(){
     filtrarMunicipiosPorEstado(this.value);
 });
 
-function cargarFormulario(id, direccion, fk_estado, fk_municipio) {
-    document.getElementById("pk").value = id;
-    document.getElementById("direccion").value = direccion;
-    // Preseleccionar estado
+function cargarFormulario(id, direccion, fk_estado, fk_municipio){
+    document.getElementById('pk').value = id;
+    document.getElementById('direccion').value = direccion || '';
+
+    // primero establecer estado y filtrar municipios, luego asignar municipio
     if (fk_estado) {
         document.getElementById('fk_estado').value = fk_estado;
         filtrarMunicipiosPorEstado(fk_estado);
-    }
-    // Preseleccionar municipio (se asume que ya está filtrado)
-    if (fk_municipio) {
-        document.getElementById('fk_municipio').value = fk_municipio;
-    }
-
-    // Cambiar botón principal a "Modificar"
-    let form = document.getElementById("predioForm");
-
-    let existingMod = document.getElementById("btnModificar");
-    if (!existingMod) {
-        let btn = document.createElement("button");
-        btn.innerText = "Modificar";
-        btn.className = "btn";
-        btn.name = "accion";
-        btn.value = "modificar";
-        btn.id = "btnModificar";
-        // Insert before registrar button
-        let registrar = document.getElementById('btnRegistrar');
-        registrar.insertAdjacentElement('afterend', btn);
+        // dar un breve timeout para garantizar que las opciones hidden se apliquen antes de seleccionar
+        setTimeout(function(){ document.getElementById('fk_municipio').value = fk_municipio || ''; }, 50);
+    } else {
+        document.getElementById('fk_estado').value = '';
+        filtrarMunicipiosPorEstado('');
+        document.getElementById('fk_municipio').value = '';
     }
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    let form = document.getElementById('predioForm');
+    let registrarBtn = form.querySelector('button[name="accion"][value="registrar"]');
+    if (registrarBtn) registrarBtn.style.display = 'none';
+
+    if (!document.getElementById('btnModificar')){
+        let btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.innerText = 'Modificar';
+        btn.name = 'accion';
+        btn.value = 'modificar';
+        btn.id = 'btnModificar';
+        btn.type = 'submit';
+        registrarBtn.insertAdjacentElement('afterend', btn);
+
+        let btnCancel = document.createElement('button');
+        btnCancel.className = 'btn';
+        btnCancel.innerText = 'Cancelar';
+        btnCancel.type = 'button';
+        btnCancel.id = 'btnCancelar';
+        btnCancel.style.background = '#555';
+        btnCancel.onclick = resetPredioForm;
+        btn.insertAdjacentElement('afterend', btnCancel);
+    }
+
+    window.scrollTo(0,0);
 }
+function resetPredioForm(){
+    document.getElementById('pk').value = '';
+    document.getElementById('direccion').value = '';
+    document.getElementById('fk_estado').value = '';
+    filtrarMunicipiosPorEstado('');
+    document.getElementById('fk_municipio').value = '';
+
+    let form = document.getElementById('predioForm');
+    let reg = form.querySelector('button[name="accion"][value="registrar"]');
+    if (reg) reg.style.display = '';
+
+    let mod = document.getElementById('btnModificar');
+    if (mod) mod.remove();
+    let cancel = document.getElementById('btnCancelar');
+    if (cancel) cancel.remove();
+}
+
+// Floating panel functions
+function showPredioDetails(arr) {
+    const obj = Array.isArray(arr) ? { id: arr[0], direccion: arr[1], estado: arr[2], municipio: arr[3], productor: arr[4], rancho: arr[5] } : (arr || {});
+    document.getElementById('d-id').innerText = obj.id || '';
+    document.getElementById('d-direccion').innerText = obj.direccion || '';
+    document.getElementById('d-estado').innerText = obj.estado || '';
+    document.getElementById('d-municipio').innerText = obj.municipio || '';
+    document.getElementById('d-productor').innerText = obj.productor || '';
+    document.getElementById('d-rancho').innerText = obj.rancho || '';
+
+    document.getElementById('predio-eliminar-pk').value = obj.id || '';
+    window._predio_float_obj = obj;
+
+    const overlay = document.getElementById('predio-details');
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+}
+function closePredioDetails(){
+    const overlay = document.getElementById('predio-details');
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+}
+function submitPredioModificarFromFloat(){
+    const obj = window._predio_float_obj || {};
+    cargarFormulario(obj.id, obj.direccion, '', '');
+    closePredioDetails();
+}
+// cerrar con ESC
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePredioDetails(); });
+// cerrar haciendo click fuera
+var predioOverlay = document.getElementById('predio-details'); if (predioOverlay) predioOverlay.addEventListener('click', function(e){ if(e.target===this) closePredioDetails(); });
 </script>
 
 {% endblock %}
