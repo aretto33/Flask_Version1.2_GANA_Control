@@ -1,7 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, render_template, request, make_response, send_from_directory
+from flask import (
+    Flask, render_template, request, redirect, url_for,
+    session, flash, Response, send_from_directory,
+    send_file, make_response, Blueprint
+)
 import mariadb
 from fpdf import FPDF
 from datetime import datetime
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from PIL import Image
 
 
 app = Flask(__name__)
@@ -20,6 +28,7 @@ app.secret_key = "SECRET_KEY_GANACONTROL_2025"
 #    except mariadb.Error as e:
   #      print("Error de conexión:", e)
  #       return None, None
+ 
 def conectar_bd():
     try:
         conn = mariadb.connect(
@@ -119,6 +128,10 @@ def register():
             return redirect(url_for("register"))
 
         try:
+            # Si el rol es Veterinario o Comprador, asignar fk_productor por defecto = 10
+            if rol in ("Veterinario", "Comprador"):
+                prod_id = 10
+
             # SI ES PRODUCTOR, PRIMERO INSERTAR EN TABLA PRODUCTORES
             if rol == "Productor":
                 nombre = request.form["prod_nombre"]
@@ -144,6 +157,8 @@ def register():
 
             flash("Usuario registrado correctamente", "success")
             return redirect(url_for("login"))
+        
+        
 
         except mariadb.Error as e:
             flash(f"No se pudo registrar: {e}", "danger")
@@ -176,6 +191,51 @@ def dashboard():
         usuario=session["usuario"],
         rol=session["rol"],
         productor=productor_nombre
+    )
+
+
+@app.route("/dashboard_vet")
+def dashboard_vet():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    productor_nombre = None
+    if session.get("fk_productor"):
+        conn, cursor = conectar_bd()
+        cursor.execute("SELECT nombre FROM Productores WHERE pk_productor=%s", (session["fk_productor"],))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            productor_nombre = row[0]
+
+    return render_template(
+        "dashboard.html",
+        usuario=session.get("usuario"),
+        rol=session.get("rol"),
+        productor=productor_nombre,
+        view="veterinario"
+    )
+
+@app.route("/dashboard_comp")
+def dashboard_comp():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    productor_nombre = None
+    if session.get("fk_productor"):
+        conn, cursor = conectar_bd()
+        cursor.execute("SELECT nombre FROM Productores WHERE pk_productor=%s", (session["fk_productor"],))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            productor_nombre = row[0]
+
+    return render_template(
+        "dashboard.html",
+        usuario=session.get("usuario"),
+        rol=session.get("rol"),
+        productor=productor_nombre,
+        view="comprador"
     )
 
 @app.route('/logout')
@@ -472,6 +532,7 @@ def mi_productor():
 
         return redirect(url_for("mi_productor"))
 
+
     # --- OBTENER DATOS DEL PRODUCTOR LOGUEADO ---
     cursor.execute("""
         SELECT pk_productor, nombre, apellido_pat, apellido_mat, UPP, RFC
@@ -558,12 +619,19 @@ def pesajes():
 
 #_-------------------------------SIINIGA-------------------------------
 
+
 @app.route("/registro_siniga", methods=["GET", "POST"])
 def registro_siniga():
-    conn,cursor = conectar_bd()
 
-    # ----- Registrar -----
-    if request.method == "POST" and request.form["accion"] == "registrar":
+    if "fk_productor" not in session:
+        return redirect(url_for("login"))
+
+    fk_productor = session["fk_productor"]
+
+    conn, cursor = conectar_bd()
+
+    # ----- REGISTRAR -----
+    if request.method == "POST" and request.form.get("accion") == "registrar":
         fk_animal = request.form["fk_animal"]
         arete = request.form["arete"]
 
@@ -573,43 +641,59 @@ def registro_siniga():
         """, (fk_animal, arete))
         conn.commit()
 
-    # ----- Modificar -----
-    if request.method == "POST" and request.form["accion"] == "modificar":
+    # ----- MODIFICAR -----
+    elif request.method == "POST" and request.form.get("accion") == "modificar":
         pk = request.form["pk"]
         fk_animal = request.form["fk_animal"]
         arete = request.form["arete"]
 
         cursor.execute("""
-            UPDATE Registro_SINIGA
-            SET fk_animal=%s, arete=%s
-            WHERE id=%s
-        """, (fk_animal, arete, pk))
+            UPDATE Registro_SINIGA r
+            INNER JOIN Animales a ON r.fk_animal = a.pk_animal
+            SET r.fk_animal = %s, r.arete = %s
+            WHERE r.id = %s AND a.fk_productor = %s
+        """, (fk_animal, arete, pk, fk_productor))
         conn.commit()
 
-    # ----- Eliminar -----
-    if request.method == "POST" and request.form["accion"] == "eliminar":
+    # ----- ELIMINAR -----
+    elif request.method == "POST" and request.form.get("accion") == "eliminar":
         pk = request.form["pk"]
-        cursor.execute("DELETE FROM Registro_SINIGA WHERE id=%s", (pk,))
+
+        cursor.execute("""
+            DELETE r FROM Registro_SINIGA r
+            INNER JOIN Animales a ON r.fk_animal = a.pk_animal
+            WHERE r.id = %s AND a.fk_productor = %s
+        """, (pk, fk_productor))
         conn.commit()
 
-    # ----- Consultar -----
+    # ----- CONSULTAR (SOLO DEL PRODUCTOR) -----
     cursor.execute("""
-        SELECT r.id, r.fk_animal, r.arete, a.nombre
+        SELECT 
+            r.id,
+            r.fk_animal,
+            r.arete,
+            a.nombre
         FROM Registro_SINIGA r
         INNER JOIN Animales a ON r.fk_animal = a.pk_animal
-    """)
+        WHERE a.fk_productor = %s
+    """, (fk_productor,))
     registros = cursor.fetchall()
 
-    # Animales para el select
-    cursor.execute("SELECT pk_animal, nombre FROM Animales")
+    # ----- ANIMALES SOLO DEL PRODUCTOR -----
+    cursor.execute("""
+        SELECT pk_animal, nombre
+        FROM Animales
+        WHERE fk_productor = %s
+    """, (fk_productor,))
     animales = cursor.fetchall()
 
     conn.close()
 
-    return render_template("registro_siniga.html",
-                           animales=animales,
-                           registros=registros)
-
+    return render_template(
+        "registro_siniga.html",
+        animales=animales,
+        registros=registros
+    )
 
 
 # ---------------- SEGUIMIENTO VETERINARIO ----------------
@@ -692,8 +776,18 @@ def ventas():
                 fk_animal = request.form.get("fk_animal") or None
                 fk_pesaje = request.form.get("fk_pesaje") or None
                 clave = request.form.get("clave")
-                precio = request.form.get("precio")
+                precio_raw = request.form.get("precio")
                 fecha_venta = request.form.get("fecha_venta")
+
+                # Validar y convertir precio a float o None
+                if precio_raw is None or precio_raw == "":
+                    flash("Precio vacío. Selecciona un animal para calcular el precio antes de registrar.", "danger")
+                    return redirect(url_for("ventas"))
+                try:
+                    precio = float(precio_raw)
+                except ValueError:
+                    flash("Precio inválido.", "danger")
+                    return redirect(url_for("ventas"))
 
                 cursor.execute("""
                     INSERT INTO Ventas (fk_animal, fk_pesaje, clave, precio, fecha_venta)
@@ -708,8 +802,18 @@ def ventas():
                 fk_animal = request.form.get("fk_animal") or None
                 fk_pesaje = request.form.get("fk_pesaje") or None
                 clave = request.form.get("clave")
-                precio = request.form.get("precio")
+                precio_raw = request.form.get("precio")
                 fecha_venta = request.form.get("fecha_venta")
+
+                # Validar precio
+                if precio_raw is None or precio_raw == "":
+                    flash("Precio vacío. Selecciona un animal para calcular el precio antes de modificar.", "danger")
+                    return redirect(url_for("ventas"))
+                try:
+                    precio = float(precio_raw)
+                except ValueError:
+                    flash("Precio inválido.", "danger")
+                    return redirect(url_for("ventas"))
 
                 cursor.execute("""
                     UPDATE Ventas
@@ -978,6 +1082,123 @@ def album_razas():
 def tabla_precio():
     return render_template("tabla_precio.html")
 
+@app.route("/opiniones")
+def opiniones():
+    return render_template("opiniones.html")
+#---------------------------------------------------------------------------------------
+# ---------------- PDF ANIMAL ----------------
+bp = Blueprint('pdf', __name__)
+
+@bp.route("/pdf_animal")
+def pdf_animal():
+    arete = request.args.get("arete")
+    predio = request.args.get("predio")
+
+    if not arete or not predio:
+        return "Datos incompletos", 400
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = mariadb.connect(
+            host="localhost",
+            user="AdminGanaderia",
+            password="2025",
+            database="Proyecto_Ganaderia"
+        )
+        cursor = conn.cursor(dictionary=True)
+
+        # ✅ LLAMADA CORRECTA A PROCEDIMIENTO (MariaDB)
+        cursor.callproc("Datos_animal", (arete, int(predio)))
+
+        animal = cursor.fetchone()
+
+        if not animal:
+            return "Animal no encontrado", 404
+
+        return generar_pdf_animal(animal)
+
+    except Exception as e:
+        return f"Error al generar PDF: {e}", 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def generar_pdf_animal(animal):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+
+    y = 750
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "DATOS DEL ANIMAL")
+    y -= 30
+
+    c.setFont("Helvetica", 10)
+
+    campos = [
+        ("Arete", animal.get("arete")),
+        ("Nombre", animal.get("nombre")),
+        ("Sexo", animal.get("sexo")),
+        ("Cruza", animal.get("cruze")),
+        ("Peso actual", animal.get("peso_actual")),
+        ("Productor", animal.get("productor")),
+        ("UPP", animal.get("UPP")),
+        ("RFC", animal.get("RFC")),
+        ("Predio", animal.get("nom_rancho")),
+        ("Dirección", animal.get("direccion")),
+        ("Estado", animal.get("estado")),
+        ("Municipio", animal.get("municipio"))
+    ]
+
+    for campo, valor in campos:
+        c.drawString(50, y, f"{campo}: {valor if valor else '---'}")
+        y -= 15
+
+    # Imagen perfil
+    if animal.get("foto_perfil"):
+        img = Image.open(io.BytesIO(animal["foto_perfil"]))
+        img_path = "/tmp/perfil.png"
+        img.save(img_path)
+        c.drawImage(img_path, 380, 600, width=150, height=150)
+
+    # Imagen lateral
+    if animal.get("foto_lateral"):
+        img = Image.open(io.BytesIO(animal["foto_lateral"]))
+        img_path = "/tmp/lateral.png"
+        img.save(img_path)
+        c.drawImage(img_path, 380, 420, width=150, height=150)
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="datos_animal.pdf"
+    )
+
+
+
+
+app.register_blueprint(bp)
 # -------------------- PROGRAMA PRINCIPAL --------------------
 if __name__ == "__main__":
     app.run(debug=True)
+    
+
+@app.route('/login_as')
+def login_as():
+    # Ruta temporal de prueba: crea sesión de Veterinario y redirige al dashboard_vet
+    session.clear()
+    session['id_usuario'] = 8
+    session['usuario'] = 'test_vet'
+    session['rol'] = 'Veterinario'
+    session['fk_productor'] = None
+    flash('Sesión creada como Veterinario de prueba (test_vet)', 'info')
+    return redirect(url_for('dashboard_vet'))
