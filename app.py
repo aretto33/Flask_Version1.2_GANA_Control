@@ -555,10 +555,11 @@ def pesajes():
     try:
         conn, cursor = conectar_bd()
 
+        # ===================== POST =====================
         if request.method == "POST":
             accion = request.form.get("accion")
 
-            # REGISTRAR
+            # ===== REGISTRAR =====
             if accion == "registrar":
                 pesaje_val = request.form.get("pesaje")
                 fecha = request.form.get("fecha")
@@ -571,7 +572,7 @@ def pesajes():
                 conn.commit()
                 flash("Pesaje registrado correctamente", "success")
 
-            # MODIFICAR
+            # ===== MODIFICAR =====
             elif accion == "modificar":
                 pk = request.form.get("pk")
                 pesaje_val = request.form.get("pesaje")
@@ -580,30 +581,53 @@ def pesajes():
 
                 cursor.execute("""
                     UPDATE Pesajes
-                    SET pesaje=%s, fecha=%s, fk_animal=%s
-                    WHERE pk_pesaje=%s
+                    SET pesaje = %s,
+                        fecha = %s,
+                        fk_animal = %s
+                    WHERE pk_pesaje = %s
                 """, (pesaje_val, fecha, fk_animal, pk))
                 conn.commit()
                 flash("Pesaje modificado correctamente", "info")
 
-            # ELIMINAR
+            # ===== ELIMINAR =====
             elif accion == "eliminar":
                 pk = request.form.get("pk")
-                cursor.execute("DELETE FROM Pesajes WHERE pk_pesaje=%s", (pk,))
+                cursor.execute(
+                    "DELETE FROM Pesajes WHERE pk_pesaje = %s",
+                    (pk,)
+                )
                 conn.commit()
-                flash("Pesaje eliminado", "danger")
+                flash("Pesaje eliminado correctamente", "danger")
 
-        # CONSULTAR REGISTROS
+        # ===================== GET =====================
+
+        # ---- LISTAR PESAJES ----
         cursor.execute("""
-            SELECT p.pk_pesaje, p.pesaje, p.fecha, a.pk_animal, a.nombre
+            SELECT 
+                p.pk_pesaje,
+                p.pesaje,
+                p.fecha,
+                a.pk_animal,
+                a.nombre
             FROM Pesajes p
             LEFT JOIN Animales a ON p.fk_animal = a.pk_animal
             ORDER BY p.pk_pesaje DESC
         """)
         pesajes = cursor.fetchall()
 
-        # Animales para el select
-        cursor.execute("SELECT pk_animal, nombre FROM Animales")
+        # ---- ANIMALES PARA EL SELECT (FILTRADOS POR PRODUCTOR) ----
+        if session.get("rol") == "Productor":
+            cursor.execute("""
+                SELECT pk_animal, nombre
+                FROM Animales
+                WHERE fk_productor = %s
+            """, (session.get("fk_productor"),))
+        else:
+            cursor.execute("""
+                SELECT pk_animal, nombre
+                FROM Animales
+            """)
+
         animales = cursor.fetchall()
 
     except Exception as e:
@@ -615,7 +639,11 @@ def pesajes():
         if conn:
             conn.close()
 
-    return render_template("pesajes.html", pesajes=pesajes, animales=animales)
+    return render_template(
+        "pesajes.html",
+        pesajes=pesajes,
+        animales=animales
+    )
 
 #_-------------------------------SIINIGA-------------------------------
 
@@ -1109,7 +1137,7 @@ def pdf_animal():
         )
         cursor = conn.cursor(dictionary=True)
 
-        # ✅ LLAMADA CORRECTA A PROCEDIMIENTO (MariaDB)
+        # LLAMADA CORRECTA A PROCEDIMIENTO (MariaDB)
         cursor.callproc("Datos_animal", (arete, int(predio)))
 
         animal = cursor.fetchone()
