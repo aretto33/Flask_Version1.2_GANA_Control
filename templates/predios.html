@@ -1,275 +1,244 @@
 {% extends "base.html" %}
 {% block content %}
-<!--   Estilos para las tablas y form-->
+
 <style>
+/* ===== GENERAL ===== */
+.table-box {
+    background:#f5e8d8;
+    padding:20px;
+    border-radius:12px;
+}
+table{ width:100%; border-collapse:collapse; }
+th{ background:#d8c2a8; padding:8px; }
+td{ border:1px solid #c4ab92; padding:8px; text-align:center; }
 
-.form-box, .table-box {
-    background: #f5e8d8;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
+.btn{
+    background:#8b5e3c;
+    color:#fff;
+    border:none;
+    padding:6px 12px;
+    border-radius:6px;
+    cursor:pointer;
 }
-input, select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #bca58b;
-    margin-bottom: 12px;
-}
-.btn {
-    background: #8b5e3c;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-}
-.btn-small {
-    padding: 6px 10px;
-    font-size: .8rem;
-}
-.btn:hover {
-    background: #6b452e;
-}
+.btn:hover{ background:#6b452e; }
+.btn-small{ font-size:.8rem; }
+.btn-ver{ background:#3e6db5; }
+.btn-ver:hover{ background:#305692; }
 
+/* ===== MODAL FORM / VIEW ===== */
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+.modal-card{
+    background:#f5e8d8;
+    padding:20px;
+    border-radius:12px;
+    max-width:600px;
+    width:100%;
+}
+.close-btn{
+    float:right;
+    background:none;
+    border:none;
+    font-size:1.2rem;
+    cursor:pointer;
+}
+input,select{
+    width:100%;
+    padding:8px;
+    border-radius:6px;
+    border:1px solid #bca58b;
+    margin-bottom:10px;
+}
 </style>
 
 <h2>Gestión de Predios</h2>
 
-<!-- FORMULARIO -->
-<div class="animal-box">
-    <h3>Registrar / Modificar Predio</h3>
+<button class="btn" onclick="abrirForm()"> Registrar Predio</button>
 
-    <form method="POST" id="predioForm">
-
-        <input type="hidden" name="pk" id="pk">
-
-        <label>Dirección:</label>
-        <input type="text" name="direccion" id="direccion" required>
-
-        <label>Estado:</label>
-        <select name="fk_estado" id="fk_estado" required>
-            <option value="">Seleccione estado...</option>
-            {% for e in estados %}
-            <option value="{{ e[0] }}">{{ e[1] }}</option>
-            {% endfor %}
-        </select>
-
-        <label>Municipio:</label>
-        <select name="fk_municipio" id="fk_municipio" required>
-            <option value="">Seleccione municipio...</option>
-            {% for m in municipios %}
-            <option value="{{ m[0] }}" data-estado="{{ m[2] }}">{{ m[1] }}</option>
-            {% endfor %}
-        </select>
-
-        <!-- SELECT DE PRODUCTOR -->
-        {% if session.get('rol') == 'Productor' %}
-            <input type="hidden" name="fk_productor" id="fk_productor" value="{{ session.get('fk_productor') }}">
-            <label>Productor:</label>
-            <input type="text" value="{{ productor_nombre if productor_nombre else ('Productor ID: ' ~ session.get('fk_productor')) }}" disabled>
-        {% else %}
-            <label>Productor:</label>
-            <select name="fk_productor" id="fk_productor">
-                <option value="">Seleccione...</option>
-                {% for p in productores %}
-                <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
-                {% endfor %}
-            </select>
-        {% endif %}
-
-        <button class="btn" name="accion" value="registrar" id="btnRegistrar">Registrar</button>
-    </form>
-</div>
-
-<!-- TABLA -->
+<!-- ===== TABLA ===== -->
 <div class="table-box">
     <h3>Predios Registrados</h3>
-
-    <table border="1" width="100%" cellpadding="6">
-        <thead style="background:#d8c2a8;">
-            <tr>
-                <th>ID</th>
-                <th>Dirección</th>
-                <th>Estado</th>
-                <th>Municipio</th>
-                <th>Productor</th>
-                <th>Rancho</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-
-        <tbody>
+    <table>
+        <tr>
+            <th>ID</th><th>Dirección</th><th>Estado</th>
+            <th>Municipio</th><th>Productor</th><th>Rancho</th>
+            <th>Acciones</th>
+        </tr>
         {% for p in predios %}
         <tr>
             <td>{{ p[0] }}</td>
             <td>{{ p[1] }}</td>
             <td>{{ p[4] }}</td>
             <td>{{ p[5] }}</td>
-            <td>{{ p[7] if p[7] else '—' }}</td>
-            <td>{{ p[8] if p[8] else '—' }}</td>
-
+            <td>{{ p[7] or '—' }}</td>
+            <td>{{ p[8] or '—' }}</td>
             <td>
-                <button class="btn btn-small btn-ver" onclick='showPredioDetails({{ [p[0], p[1], p[4], p[5], p[7], p[8]] | tojson }})' style="margin-right:6px; background:#3e6db5; color:white;">Ver</button>
+    <button class="btn btn-small btn-ver"
+        onclick='verPredio({{ {
+            "id":p[0], "direccion":p[1],
+            "estado":p[4], "municipio":p[5],
+            "productor":p[7], "rancho":p[8],
+            "fk_estado":p[2], "fk_municipio":p[3]
+        } | tojson }})'>Ver</button>
 
-                <button class="btn btn-small"
-                        onclick="cargarFormulario('{{ p[0] }}','{{ p[1] }}','{{ p[2] }}','{{ p[3] }}')">
-                    Modificar
-                </button>
+    <button class="btn btn-small"
+        onclick='editarPredio({{
+            {"id":p[0],"direccion":p[1],
+             "fk_estado":p[2],"fk_municipio":p[3]}
+            | tojson
+        }})'>Modificar</button>
 
-                <form method="POST" style="display:inline;">
-                    <input type="hidden" name="pk" value="{{ p[0] }}">
-                    <button class="btn btn-small" name="accion" value="eliminar"
-                            style="background:#a63c3c;">
-                        Eliminar
-                    </button>
-                </form>
-            </td>
+    <button class="btn btn-small"
+        style="background:#b53e3e"
+        onclick="eliminarPredio({{ p[0] }})">
+        Eliminar
+    </button>
+</td>
+
         </tr>
         {% endfor %}
-        </tbody>
     </table>
+</div>
 
-    <!-- Floating details panel for Predio -->
-    <style>
-    .pesaje-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999; }
-    .pesaje-card { background:#fff; width:90%; max-width:640px; border-radius:10px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
-    .pesaje-card .close-btn { float:right; background:transparent; border:none; font-size:1.2rem; cursor:pointer; }
-    .pesaje-card p{ margin:8px 0 }
-    </style>
+<!-- ===== MODAL FORM ===== -->
+<div id="modalForm" class="modal-overlay">
+    <div class="modal-card">
+        <button class="close-btn" onclick="cerrar()">✕</button>
+        <h3 id="formTitle">Registrar Predio</h3>
 
-    <div id="predio-details" class="pesaje-overlay" role="dialog" aria-hidden="true">
-      <div class="pesaje-card" role="document">
-        <button class="close-btn" onclick="closePredioDetails()">✕</button>
-        <h4>Detalle de Predio</h4>
-        <p><strong>ID:</strong> <span id="d-id"></span></p>
-        <p><strong>Dirección:</strong> <span id="d-direccion"></span></p>
-        <p><strong>Estado:</strong> <span id="d-estado"></span></p>
-        <p><strong>Municipio:</strong> <span id="d-municipio"></span></p>
-        <p><strong>Productor:</strong> <span id="d-productor"></span></p>
-        <p><strong>Rancho:</strong> <span id="d-rancho"></span></p>
-        <div style="margin-top:12px">
-            <button class="btn" id="predio-mod-btn" onclick="submitPredioModificarFromFloat()">Modificar</button>
-            <form id="predio-eliminar-form" method="POST" style="display:inline; margin-left:8px;">
-                <input type="hidden" name="pk" id="predio-eliminar-pk">
-                <button class="btn" name="accion" value="eliminar" style="background:#a63c3c; color:white;">Eliminar</button>
-            </form>
-        </div>
-      </div>
+        <form method="POST" id="predioForm">
+            <input type="hidden" name="pk" id="f_pk">
+
+            <label>Dirección</label>
+            <input type="text" name="direccion" id="f_direccion" required>
+
+            <label>Estado</label>
+            <select name="fk_estado" id="f_estado" required>
+                <option value="">Seleccione…</option>
+                {% for e in estados %}
+                <option value="{{ e[0] }}">{{ e[1] }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Municipio</label>
+            <select name="fk_municipio" id="f_municipio" required>
+                <option value="">Seleccione…</option>
+                {% for m in municipios %}
+                <option value="{{ m[0] }}" data-estado="{{ m[2] }}">{{ m[1] }}</option>
+                {% endfor %}
+            </select>
+
+            {% if session.get('rol')=='Productor' %}
+                <input type="hidden" name="fk_productor" value="{{ session.get('fk_productor') }}">
+            {% else %}
+                <label>Productor</label>
+                <select name="fk_productor">
+                    {% for p in productores %}
+                    <option value="{{ p[0] }}">{{ p[1] }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+
+            <button class="btn" name="accion" value="registrar" id="btnAccion">
+                Guardar
+            </button>
+        </form>
     </div>
+</div>
 
+<!-- ===== MODAL VER ===== -->
+<div id="modalVer" class="modal-overlay">
+    <div class="modal-card">
+        <button class="close-btn" onclick="cerrar()">✕</button>
+        <h3>Detalle del Predio</h3>
+        <p><b>ID:</b> <span id="v_id"></span></p>
+        <p><b>Dirección:</b> <span id="v_dir"></span></p>
+        <p><b>Estado:</b> <span id="v_estado"></span></p>
+        <p><b>Municipio:</b> <span id="v_municipio"></span></p>
+        <p><b>Productor:</b> <span id="v_productor"></span></p>
+        <p><b>Rancho:</b> <span id="v_rancho"></span></p>
+
+        <button class="btn" onclick="editarDesdeVer()">Modificar</button>
+    </div>
 </div>
 
 <script>
-function filtrarMunicipiosPorEstado(estadoId) {
-    const opciones = document.querySelectorAll('#fk_municipio option');
-    opciones.forEach(opt => {
-        if (!opt.value) { opt.hidden = false; opt.disabled = false; return; } // placeholder
-        const mEstado = opt.getAttribute('data-estado');
-        const match = (String(mEstado) === String(estadoId));
-        opt.hidden = !match;
-        opt.disabled = !match;
+let actual=null;
+
+function abrirForm(){
+    document.getElementById("predioForm").reset();
+    document.getElementById("f_pk").value="";
+    document.getElementById("formTitle").innerText="Registrar Predio";
+    document.getElementById("btnAccion").value="registrar";
+    document.getElementById("modalForm").style.display="flex";
+}
+
+function editarPredio(o){
+    actual=o;
+    document.getElementById("f_pk").value=o.id;
+    document.getElementById("f_direccion").value=o.direccion;
+    document.getElementById("f_estado").value=o.fk_estado;
+    filtrar(o.fk_estado);
+    setTimeout(()=>f_municipio.value=o.fk_municipio,50);
+    document.getElementById("formTitle").innerText="Modificar Predio";
+    document.getElementById("btnAccion").value="modificar";
+    document.getElementById("modalForm").style.display="flex";
+}
+
+function verPredio(o){
+    actual=o;
+    v_id.innerText=o.id;
+    v_dir.innerText=o.direccion;
+    v_estado.innerText=o.estado;
+    v_municipio.innerText=o.municipio;
+    v_productor.innerText=o.productor||'—';
+    v_rancho.innerText=o.rancho||'—';
+    modalVer.style.display="flex";
+}
+
+function editarDesdeVer(){
+    cerrar();
+    editarPredio(actual);
+}
+
+function cerrar(){
+    modalForm.style.display="none";
+    modalVer.style.display="none";
+}
+
+function filtrar(id){
+    document.querySelectorAll("#f_municipio option").forEach(o=>{
+        o.hidden=o.value && o.dataset.estado!=id;
     });
-    // Reset seleccionado
-    const sel = document.getElementById('fk_municipio');
-    sel.value = '';
 }
+f_estado.addEventListener("change",e=>filtrar(e.target.value));
 
-// Cuando cambia el estado, filtrar municipios
-document.getElementById('fk_estado').addEventListener('change', function(){
-    filtrarMunicipiosPorEstado(this.value);
-});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") cerrar(); });
 
-function cargarFormulario(id, direccion, fk_estado, fk_municipio){
-    document.getElementById('pk').value = id;
-    document.getElementById('direccion').value = direccion || '';
-
-    // primero establecer estado y filtrar municipios, luego asignar municipio
-    if (fk_estado) {
-        document.getElementById('fk_estado').value = fk_estado;
-        filtrarMunicipiosPorEstado(fk_estado);
-        // dar un breve timeout para garantizar que las opciones hidden se apliquen antes de seleccionar
-        setTimeout(function(){ document.getElementById('fk_municipio').value = fk_municipio || ''; }, 50);
-    } else {
-        document.getElementById('fk_estado').value = '';
-        filtrarMunicipiosPorEstado('');
-        document.getElementById('fk_municipio').value = '';
+function eliminarPredio(id){
+    if(!confirm("¿Deseas eliminar este predio?\nEsta acción no se puede deshacer.")) {
+        return;
     }
 
-    let form = document.getElementById('predioForm');
-    let registrarBtn = form.querySelector('button[name="accion"][value="registrar"]');
-    if (registrarBtn) registrarBtn.style.display = 'none';
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.style.display = "none";
 
-    if (!document.getElementById('btnModificar')){
-        let btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.innerText = 'Modificar';
-        btn.name = 'accion';
-        btn.value = 'modificar';
-        btn.id = 'btnModificar';
-        btn.type = 'submit';
-        registrarBtn.insertAdjacentElement('afterend', btn);
+    form.innerHTML = `
+        <input type="hidden" name="accion" value="eliminar">
+        <input type="hidden" name="pk" value="${id}">
+    `;
 
-        let btnCancel = document.createElement('button');
-        btnCancel.className = 'btn';
-        btnCancel.innerText = 'Cancelar';
-        btnCancel.type = 'button';
-        btnCancel.id = 'btnCancelar';
-        btnCancel.style.background = '#555';
-        btnCancel.onclick = resetPredioForm;
-        btn.insertAdjacentElement('afterend', btnCancel);
-    }
-
-    window.scrollTo(0,0);
+    document.body.appendChild(form);
+    form.submit();
 }
-function resetPredioForm(){
-    document.getElementById('pk').value = '';
-    document.getElementById('direccion').value = '';
-    document.getElementById('fk_estado').value = '';
-    filtrarMunicipiosPorEstado('');
-    document.getElementById('fk_municipio').value = '';
-
-    let form = document.getElementById('predioForm');
-    let reg = form.querySelector('button[name="accion"][value="registrar"]');
-    if (reg) reg.style.display = '';
-
-    let mod = document.getElementById('btnModificar');
-    if (mod) mod.remove();
-    let cancel = document.getElementById('btnCancelar');
-    if (cancel) cancel.remove();
-}
-
-// Floating panel functions
-function showPredioDetails(arr) {
-    const obj = Array.isArray(arr) ? { id: arr[0], direccion: arr[1], estado: arr[2], municipio: arr[3], productor: arr[4], rancho: arr[5] } : (arr || {});
-    document.getElementById('d-id').innerText = obj.id || '';
-    document.getElementById('d-direccion').innerText = obj.direccion || '';
-    document.getElementById('d-estado').innerText = obj.estado || '';
-    document.getElementById('d-municipio').innerText = obj.municipio || '';
-    document.getElementById('d-productor').innerText = obj.productor || '';
-    document.getElementById('d-rancho').innerText = obj.rancho || '';
-
-    document.getElementById('predio-eliminar-pk').value = obj.id || '';
-    window._predio_float_obj = obj;
-
-    const overlay = document.getElementById('predio-details');
-    overlay.style.display = 'flex';
-    overlay.setAttribute('aria-hidden', 'false');
-}
-function closePredioDetails(){
-    const overlay = document.getElementById('predio-details');
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden', 'true');
-}
-function submitPredioModificarFromFloat(){
-    const obj = window._predio_float_obj || {};
-    cargarFormulario(obj.id, obj.direccion, '', '');
-    closePredioDetails();
-}
-// cerrar con ESC
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePredioDetails(); });
-// cerrar haciendo click fuera
-var predioOverlay = document.getElementById('predio-details'); if (predioOverlay) predioOverlay.addEventListener('click', function(e){ if(e.target===this) closePredioDetails(); });
 </script>
 
 {% endblock %}

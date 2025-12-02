@@ -1,72 +1,122 @@
 {% extends "base.html" %}
 {% block content %}
 
+<div class="pesajes-module">
 <style>
-.form-box, .table-box {
-    background: #f5e8d8;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
+.pesajes-module h2{
+    margin-bottom:15px;
+    color:#5a3a22;
 }
 
-input, select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #bca58b;
-    margin-bottom: 12px;
+/* ===== CONTENEDORES ===== */
+.pesajes-module .box{
+    background:#f5e8d8;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:25px;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);
 }
 
-.btn {
-    background: #8b5e3c;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
+/* ===== TABLA ===== */
+.pesajes-module table{
+    width:100%;
+    border-collapse:collapse;
 }
-.btn:hover { background: #6b452e; }
+.pesajes-module th{
+    background:#d8c2a8;
+    padding:10px;
+    color:#4a2f1a;
+}
+.pesajes-module td{
+    background:#efe1cf;          /* ← café claro, ya NO blanco */
+    border:1px solid #c4ab92;
+    padding:8px;
+    text-align:center;
+    color:#4a2f1a;
+}
 
-.btn-small { padding: 6px 10px; font-size: 0.8rem; }
+/* ===== BOTONES ===== */
+.pesajes-module .btn{
+    background:#8b5e3c;
+    color:#fff;
+    border:none;
+    padding:6px 12px;
+    border-radius:6px;
+    cursor:pointer;
+}
+.pesajes-module .btn:hover{
+    background:#6b452e;
+}
+.pesajes-module .btn-ver{
+    background:#7a93c9;          /* azul suave que combina */
+}
+.pesajes-module .btn-ver:hover{
+    background:#5f77aa;
+}
+.pesajes-module .btn-del{
+    background:#a14a3a;
+}
 
-.pesaje-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9998}
-.pesaje-card{background:#fff;padding:18px;border-radius:10px;max-width:560px;width:90%;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.pesaje-card h4{margin-top:0}
-.pesaje-meta p{margin:6px 0}
-.pesaje-close{float:right;border:none;background:transparent;font-size:1.1rem;cursor:pointer}
+/* ===== FORM ===== */
+.pesajes-module input,
+.pesajes-module select{
+    width:100%;
+    padding:8px;
+    border-radius:6px;
+    border:1px solid #bca58b;
+    margin-bottom:10px;
+    background:#f3e6d6;          /* ← café claro */
+    color:#4a2f1a;
+}
+.pesajes-module input:focus,
+.pesajes-module select:focus{
+    outline:none;
+    border-color:#8b5e3c;
+}
+
+/* ===== MODAL ===== */
+.pesajes-module .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+.pesajes-module .card{
+    background:#f5e8d8;          /* ← mismo color que cajas */
+    padding:20px;
+    border-radius:12px;
+    min-width:380px;
+    box-shadow:0 10px 26px rgba(0,0,0,.35);
+}
+.pesajes-module .card p,
+.pesajes-module .card h4{
+    color:#4a2f1a;
+}
+.pesajes-module .close{
+    float:right;
+    background:none;
+    border:none;
+    font-size:1.2rem;
+    cursor:pointer;
+    color:#5a3a22;
+}
 </style>
+
 
 <h2>Gestión de Pesajes</h2>
 
-<div class="form-box">
-    <h3>Registrar / Modificar Pesaje</h3>
+<button class="btn" onclick="abrirForm()">➕ Registrar Pesaje</button>
 
-    <form method="POST" id="pesajeForm">
-        <input type="hidden" name="pk" id="pk">
-
-        <label>Peso (kg):</label>
-        <input type="number" step="0.1" name="pesaje" id="pesaje" required>
-
-        <label>Fecha:</label>
-        <input type="date" name="fecha" id="fecha" required>
-
-        <label>Animal:</label>
-        <select name="fk_animal" id="fk_animal">
-            <option value="">Seleccione...</option>
-            {% for a in animales %}
-            <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
-            {% endfor %}
-        </select>
-
-        <button class="btn" name="accion" value="registrar">Registrar</button>
-    </form>
-</div>
-
-<div class="table-box">
+<!-- ===== TABLA ===== -->
+<div class="box">
     <h3>Pesajes Registrados</h3>
+    <h4>Total: {{ pesajes|length }}</h4> <!-- Hace el conteo de los pesajes en la tabla -->
 
-    <table border="1" width="100%" cellpadding="6">
-        <tr style="background:#d8c2a8;">
+    <table>
+        <tr>
             <th>ID</th>
             <th>Peso (kg)</th>
             <th>Fecha</th>
@@ -79,13 +129,28 @@ input, select {
             <td>{{ p[0] }}</td>
             <td>{{ p[1] }}</td>
             <td>{{ p[2] }}</td>
-            <td>{% if p[4] %}{{ p[4] }} ({{ p[3] }}){% else %}Sin animal{% endif %}</td>
+            <td>{{ p[4] or '—' }} ({{ p[3] or '—' }})</td>
             <td>
-                <button class="btn btn-small" onclick="cargarFormulario('{{ p[0] }}','{{ p[1] }}','{{ p[2] }}','{{ p[3] }}')">Modificar</button>
-                <button class="btn btn-small btn-ver" onclick='showPesajeDetails({{ [p[0], p[1], p[2], p[3], p[4]] | tojson }})' style="margin-left:6px; background:#3e6db5;">Ver</button>
-                <form method="POST" style="display:inline; margin-left:6px;">
+                <button class="btn btn-ver btn-small"
+                    onclick='verPesaje({{ {
+                        "id":p[0],"peso":p[1],"fecha":p[2],
+                        "fk_animal":p[3],"animal":p[4]
+                    } | tojson }})'>Ver</button>
+
+                <button class="btn btn-small"
+                    onclick='editarPesaje({{
+                        {"id":p[0],"peso":p[1],
+                         "fecha":p[2],"fk_animal":p[3]}
+                        | tojson
+                    }})'>Modificar</button>
+
+                <form method="POST" style="display:inline">
                     <input type="hidden" name="pk" value="{{ p[0] }}">
-                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">Eliminar</button>
+                    <button class="btn btn-small btn-del"
+                        name="accion" value="eliminar"
+                        onclick="return confirm('¿Eliminar este pesaje?')">
+                        Eliminar
+                    </button>
                 </form>
             </td>
         </tr>
@@ -93,107 +158,91 @@ input, select {
     </table>
 </div>
 
-<script>
-function cargarFormulario(id, peso, fecha, fk_animal) {
-    document.getElementById('pk').value = id;
-    document.getElementById('pesaje').value = peso;
-    document.getElementById('fecha').value = fecha;
-    document.getElementById('fk_animal').value = fk_animal;
+<!-- ===== MODAL FORM ===== -->
+<div id="modalForm" class="overlay">
+    <div class="card">
+        <button class="close" onclick="cerrar()">✕</button>
+        <h3 id="titulo">Registrar Pesaje</h3>
 
-    let form = document.getElementById('pesajeForm');
-    let existing = document.getElementById('btnModificar');
-    let registrarBtn = form.querySelector('button[name="accion"][value="registrar"]');
+        <form method="POST">
+            <input type="hidden" name="pk" id="f_pk">
 
-    // ocultar boton registrar
-    if (registrarBtn) registrarBtn.style.display = 'none';
+            <label>Peso (kg)</label>
+            <input type="number" step="0.1" name="pesaje" id="f_peso" required>
 
-    if (!existing) {
-        let btn = document.createElement('button');
-        btn.innerText = 'Modificar';
-        btn.className = 'btn';
-        btn.name = 'accion';
-        btn.value = 'modificar';
-        btn.id = 'btnModificar';
-        btn.style.marginLeft = '10px';
-        form.appendChild(btn);
+            <label>Fecha</label>
+            <input type="date" name="fecha" id="f_fecha" required>
 
-        // boton cancelar
-        let btnCancel = document.createElement('button');
-        btnCancel.innerText = 'Cancelar';
-        btnCancel.type = 'button';
-        btnCancel.className = 'btn';
-        btnCancel.id = 'btnCancelar';
-        btnCancel.style.marginLeft = '8px';
-        btnCancel.style.background = '#777';
-        btnCancel.onclick = function(){ resetPesajeForm(); };
-        form.appendChild(btnCancel);
-    }
+            <label>Animal</label>
+            <select name="fk_animal" id="f_animal" required>
+                <option value="">Seleccione…</option>
+                {% for a in animales %}
+                <option value="{{ a[0] }}">{{ a[1] }}</option>
+                {% endfor %}
+            </select>
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+            <button class="btn" name="accion" id="accion" value="registrar">
+                Guardar
+            </button>
+        </form>
+    </div>
+</div>
 
-function resetPesajeForm(){
-    let form = document.getElementById('pesajeForm');
-    document.getElementById('pk').value = '';
-    document.getElementById('pesaje').value = '';
-    document.getElementById('fecha').value = '';
-    document.getElementById('fk_animal').value = '';
+<!-- ===== MODAL VER ===== -->
+<div id="modalVer" class="overlay">
+    <div class="card">
+        <button class="close" onclick="cerrar()">✕</button>
+        <h3>Detalle del Pesaje</h3>
+        <p><b>ID:</b> <span id="v_id"></span></p>
+        <p><b>Peso:</b> <span id="v_peso"></span> kg</p>
+        <p><b>Fecha:</b> <span id="v_fecha"></span></p>
+        <p><b>Animal:</b> <span id="v_animal"></span></p>
 
-    // restaurar botones
-    let registrarBtn = form.querySelector('button[name="accion"][value="registrar"]');
-    if (registrarBtn) registrarBtn.style.display = '';
-
-    let existing = document.getElementById('btnModificar');
-    if (existing) existing.remove();
-    let cancel = document.getElementById('btnCancelar');
-    if (cancel) cancel.remove();
-}
-</script>
-
-<div id="pesaje-details" class="pesaje-overlay" aria-hidden="true">
-    <div class="pesaje-card" role="dialog">
-        <button class="pesaje-close" aria-label="Cerrar" onclick="closePesajeDetails()">✕</button>
-        <h4>Detalle de Pesaje</h4>
-        <div class="pesaje-meta">
-            <p><strong>ID:</strong> <span id="p-id"></span></p>
-            <p><strong>Peso (kg):</strong> <span id="p-peso"></span></p>
-            <p><strong>Fecha:</strong> <span id="p-fecha"></span></p>
-            <p><strong>Animal ID:</strong> <span id="p-animal"></span></p>
-        </div>
-        <div style="margin-top:12px">
-            <button class="btn" onclick="openEditFromPesaje()">Modificar</button>
-        </div>
+        <button class="btn" onclick="editarDesdeVer()">Modificar</button>
     </div>
 </div>
 
 <script>
-function showPesajeDetails(arr){
-    // arr: [id,peso,fecha,fk_animal, animal_nombre?]
-    var obj = Array.isArray(arr) ? {id:arr[0],peso:arr[1],fecha:arr[2],fk_animal:arr[3],animal_nombre:arr[4]} : arr;
-    document.getElementById('p-id').innerText = obj.id || '';
-    document.getElementById('p-peso').innerText = obj.peso || '';
-    document.getElementById('p-fecha').innerText = obj.fecha || '';
-    document.getElementById('p-animal').innerText = obj.fk_animal ? (obj.animal_nombre ? obj.animal_nombre + ' ('+obj.fk_animal+')' : obj.fk_animal) : 'Sin animal';
+let actual=null;
 
-    // store for edit
-    window._pesaje_float = obj;
-    document.getElementById('pesaje-details').style.display = 'flex';
-    document.getElementById('pesaje-details').setAttribute('aria-hidden','false');
+function abrirForm(){
+    document.querySelector("form").reset();
+    f_pk.value="";
+    accion.value="registrar";
+    titulo.innerText="Registrar Pesaje";
+    modalForm.style.display="flex";
 }
-function closePesajeDetails(){
-    document.getElementById('pesaje-details').style.display = 'none';
-    document.getElementById('pesaje-details').setAttribute('aria-hidden','true');
+
+function editarPesaje(o){
+    actual=o;
+    f_pk.value=o.id;
+    f_peso.value=o.peso;
+    f_fecha.value=o.fecha;
+    f_animal.value=o.fk_animal;
+    accion.value="modificar";
+    titulo.innerText="Modificar Pesaje";
+    modalForm.style.display="flex";
 }
-function openEditFromPesaje(){
-    var o = window._pesaje_float || {};
-    // abrir formulario principal para modificar
-    cargarFormulario(o.id, o.peso, o.fecha, o.fk_animal);
-    closePesajeDetails();
+
+function verPesaje(o){
+    actual=o;
+    v_id.innerText=o.id;
+    v_peso.innerText=o.peso;
+    v_fecha.innerText=o.fecha;
+    v_animal.innerText=o.animal || '—';
+    modalVer.style.display="flex";
 }
-// cerrar con ESC
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePesajeDetails(); });
-// cerrar clic fuera
-document.getElementById('pesaje-details').addEventListener('click', function(e){ if(e.target===this) closePesajeDetails(); });
+
+function editarDesdeVer(){
+    cerrar();
+    editarPesaje(actual);
+}
+
+function cerrar(){
+    modalForm.style.display="none";
+    modalVer.style.display="none";
+}
 </script>
 
+</div>
 {% endblock %}

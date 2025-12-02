@@ -2,32 +2,44 @@
 {% block content %}
 
 <style>
-.animal-form, .animal-table {
+/* ===== estilos (puedes moverlos a style.css) ===== */
+.animal-table {
     background: #f5e8d8;
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 25px;
 }
 
-input, select {
+input, select, textarea {
     width: 100%;
     padding: 10px;
     border-radius: 6px;
     border: 1px solid #bca58b;
     margin-bottom: 12px;
+    box-sizing: border-box;
 }
 
 .btn {
     background: #8b5e3c;
     color: white;
-    padding: 10px 15px;
+    padding: 8px 14px;
     border-radius: 6px;
     border: none;
     cursor: pointer;
 }
-.btn:hover {
-    background: #6b452e;
+.btn:hover { background: #6b452e; }
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
 }
+
+/* botón ver azul */
+.btn-ver {
+    background: #3e6db5;
+}
+.btn-ver:hover { background: #305692; }
+
 img.animal-img {
     width: 80px;
     height: 80px;
@@ -35,374 +47,309 @@ img.animal-img {
     border-radius: 8px;
 }
 
-.btn-small {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-}
-</style>
-<style>
-.detalles {
-    display: none;
-    background: #f9f2e8;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 10px;
-    border: 1px solid #d6c2b0;
-}
-.detalles.mostrar {
-    display: block;
-}
-.btn-ver {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    background: #3e6db5;
-    color:white;
-    border-radius:6px;
-    border:none;
-    cursor:pointer;
-}
-.btn-ver:hover {
-    background:#305692;
-}
-</style>
-
-
-<h2>Gestión de Animales</h2>
-
-<!-- FORMULARIO -->
-<div class="animal-form">
-    <h3>Registrar / Modificar Animal</h3>
-
-    <form method="POST" enctype="multipart/form-data" id="animalForm">
-
-        <input type="hidden" name="pk" id="pk">
-
-        <label>Nombre:</label>
-        <input type="text" name="nombre" id="nombre" required>
-
-        <label>Fecha de nacimiento:</label>
-        <input type="date" name="fecha" id="fecha" required>
-
-        <label>Cruze:</label>
-        <input type="text" name="cruze" id="cruze">
-
-        <!-- SELECT DE PRODUCTOR -->
-        <label>Productor:</label>
-        {% if session.get('rol') == 'Productor' %}
-            <input type="hidden" name="fk_productor" id="fk_productor" value="{{ session.get('fk_productor') }}">
-            <input type="text" class="form-control" value="{% for p in productores %}{% if p[0]==session.get('fk_productor') %}{{ p[1] }}{% endif %}{% endfor %}" readonly>
-        {% else %}
-            <select name="fk_productor" id="fk_productor">
-                <option value="">Seleccione...</option>
-                {% for p in productores %}
-                <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
-                {% endfor %}
-            </select>
-        {% endif %}
-
-        <!-- SELECT DE RAZA -->
-        <label>Raza:</label>
-        <select name="fk_raza" id="fk_raza">
-            <option value="">Seleccione...</option>
-            {% for r in razas %}
-            <option value="{{ r[0] }}">{{ r[0] }} - {{ r[1] }}</option>
-            {% endfor %}
-        </select>
-
-        <label>Foto perfil:</label>
-        <input type="file" name="foto_perfil" accept="image/*">
-
-        <label>Foto lateral:</label>
-        <input type="file" name="foto_lateral" accept="image/*">
-
-        <label>Sexo:</label>
-        <select name="sexo" id="sexo" required>
-            <option value="M">Macho</option>
-            <option value="H">Hembra</option>
-        </select>
-        
-        <button class="btn" name="accion" value="registrar" id="btnRegistrar">Registrar</button>
-                
-    </form>
-</div>
-
- <!-- TABLA -->
-<div class="animal-table">
-    <h3>Animales Registrados</h3>
-
-    <table border="1" width="100%" cellpadding="6">
-        <tr style="background:#d8c2a8;">
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Fecha</th>
-            <th>Cruze</th>
-            <th>Productor</th>
-            <th>Raza</th>
-            <th>Sexo</th>
-            <th>Peso Actual (kg)</th>
-            <th>Foto Perfil</th>
-            <th>Foto Lateral</th>
-            <th>Acciones</th>
-        </tr>
-
-        {% for a in animales %}
-        <tr>
-            <td>{{ a[0] }}</td>
-            <td>{{ a[1] }}</td>
-            <td>{{ a[2] }}</td>
-            <td>{{ a[3] }}</td>
-            <td>{{ a[4] }}</td>
-            <td>{{ a[5] }}</td>
-            <td>{{ a[6] }}</td>
-            <td>{{ a[7] }}</td>
-
-            <!-- FOTOS -->
-            <td>
-                <img class="animal-img" 
-                     src="{{ url_for('imagen_animal', id=a[0], tipo='foto_perfil') }}"
-                     onerror="this.style.display='none'">
-            </td>
-
-            <td>
-                <img class="animal-img" 
-                     src="{{ url_for('imagen_animal', id=a[0], tipo='foto_lateral') }}"
-                     onerror="this.style.display='none'">
-            </td>
-
-            <!-- ACCIONES -->
-            <td>
-
-                <!-- BOTÓN VER -->
-                <!-- Este botón manda todos los datos al panel flotante -->
-                <button class="btn-ver"
-                        onclick='showFloatingDetails({{ {
-                            "id":a[0], "nombre":a[1], "fecha":a[2], "cruze":a[3],
-                            "productor":a[4], "raza":a[5], "sexo":a[6], "peso":a[7]
-                        } | tojson }})'>
-                    Ver
-                </button>
-
-                <!-- BOTÓN MODIFICAR -->
-                <!-- Llama a la función cargarFormulario -->
-                <button class="btn btn-small"
-                    onclick="cargarFormulario(
-                        '{{ a[0] }}','{{ a[1] }}','{{ a[2] }}','{{ a[3] }}',
-                        '{{ a[4] }}','{{ a[5] }}','{{ a[6] }}'
-                    )">
-                    Modificar
-                </button>
-
-                <!-- BOTÓN ELIMINAR -->
-                <form method="POST" style="display:inline;">
-                    <input type="hidden" name="pk" value="{{ a[0] }}">
-                    <button class="btn btn-small"
-                            name="accion"
-                            value="eliminar"
-                            style="background:#a63c3c;">
-                        Eliminar
-                    </button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<script>
-function cargarFormulario(id, nombre, fecha, cruze, productor, raza, sexo) {
-    document.getElementById("pk").value = id;
-    document.getElementById("nombre").value = nombre;
-    document.getElementById("fecha").value = fecha;
-    document.getElementById("cruze").value = cruze;
-
-    const prodEl = document.getElementById("fk_productor");
-    setSelectOrInputValue(prodEl, productor);
-
-    const razaEl = document.getElementById("fk_raza");
-    setSelectOrInputValue(razaEl, raza);
-
-    document.getElementById("sexo").value = sexo;
-
-    // Ocultar registrar
-    let registrarBtn = document.getElementById("btnRegistrar");
-    registrarBtn.style.display = "none";
-
-    // Crear botón modificar si no existe
-    let form = document.getElementById("animalForm");
-    let existing = document.getElementById("btnModificar");
-
-    if (!existing) {
-        let btn = document.createElement("button");
-        btn.innerText = "Modificar";
-        btn.className = "btn";
-        btn.name = "accion";
-        btn.value = "modificar";
-        btn.id = "btnModificar";
-        btn.style.marginLeft = "10px";
-        form.appendChild(btn);
-    }
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function setSelectOrInputValue(el, value) {
-    if (!el) return;
-    const tag = el.tagName ? el.tagName.toUpperCase() : null;
-
-    if (tag === 'SELECT') {
-        if (el.querySelector('option[value="' + value + '"]')) {
-            el.value = value;
-            return;
-        }
-        for (let i=0;i<el.options.length;i++) {
-            const opt = el.options[i];
-            if (opt.text.trim() === value || opt.text.includes(value)) {
-                el.value = opt.value;
-                return;
-            }
-        }
-        el.value = '';
-    } else {
-        el.value = value;
-    }
-}
-</script>
-<script>
-function toggleDetalles(id) {
-    const fila = document.getElementById("detalles-" + id);
-    fila.classList.toggle("mostrar");
-}
-</script>
-
-<!-- Floating details panel (overlay) -->
-<style>
-.floating-overlay {
+/* ===== modal/card ===== */
+.modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    align-items: center;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none; /* se muestra con JS */
     justify-content: center;
+    align-items: center;
     z-index: 9999;
-}
-.floating-card {
-    background: white;
-    width: 90%;
-    max-width: 900px;
-    border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    overflow: auto;
 }
-.floating-card .close-btn {
-    float: right;
+.modal-card {
+    background: #f5e8d8;
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 720px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    position: relative;
+}
+.close-btn {
+    position: absolute;
+    right: 12px;
+    top: 8px;
     background: transparent;
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
 }
-.floating-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-.floating-grid img { width: 100%; height: auto; border-radius: 8px; object-fit: cover; }
-.floating-meta p { margin: 6px 0; }
-@media (max-width: 700px) {
-    .floating-grid { grid-template-columns: 1fr; }
-}
-</style>
 
-<div id="floating-details" class="floating-overlay" role="dialog" aria-hidden="true">
-    <div class="floating-card" role="document">
-        <button class="close-btn" aria-label="Cerrar" onclick="closeFloatingDetails()">✕</button>
-        <h3 id="float-nombre">Animal</h3>
-        <div class="floating-grid">
-            <div>
-                <img id="float-perfil" src="" alt="Foto perfil">
-                <div style="height:12px"></div>
-                <img id="float-lateral" src="" alt="Foto lateral">
-            </div>
-            <div class="floating-meta">
-                <p><strong>ID:</strong> <span id="float-id"></span></p>
-                <p><strong>Fecha Nac.:</strong> <span id="float-fecha"></span></p>
-                <p><strong>Cruze:</strong> <span id="float-cruze"></span></p>
-                <p><strong>Productor:</strong> <span id="float-productor"></span></p>
-                <p><strong>Raza:</strong> <span id="float-raza"></span></p>
-                <p><strong>Sexo:</strong> <span id="float-sexo"></span></p>
-                <p><strong>Peso actual:</strong> <span id="float-peso"></span> kg</p>
-                <div style="margin-top:12px">
-                    <button class="btn" id="float-modificar" onclick="submitModificarFromFloat()">Modificar</button>
-                    <form id="float-eliminar-form" method="POST" style="display:inline; margin-left:8px;">
-                        <input type="hidden" name="pk" id="float-eliminar-pk">
-                        <button class="btn" name="accion" value="eliminar" style="background:#a63c3c;">Eliminar</button>
-                    </form>
-                </div>
-            </div>
+/* tabla */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th {
+    background: #d8c2a8;
+    padding: 8px;
+}
+td {
+    padding: 8px;
+    border: 1px solid #c4ab92;
+    text-align: center;
+}
+.actions-cell { white-space: nowrap; }
+
+.banner {
+        width: 100%;
+        max-width: 1300px;
+        height: auto;
+        display: block;
+        margin: 20px auto;
+        border-radius: 12px;
+    }
+
+</style>
+<img src="{{ url_for('static', filename='img/3.png') }}" class="banner">
+<h2>Gestión de Animales</h2>
+<h4 class= >Aquí puedes registrar y modificar los animales con la finalidad de tener registros de los nuevos nacimientos que ocurran y ubicar el animal.</h4>
+
+<!-- botón para abrir modal de crear -->
+<button class="btn" id="btnNuevo">Registrar Animal</button>
+<br><br>
+
+<!-- TABLA -->
+<div class="animal-table">
+    <h3>Animales Registrados</h3>
+    <!--La propiedad length de un objeto String representa la longitud de una cadena, en unidades de código-->
+    <h4>Total: {{ animales|length }}</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Nombre</th><th>Fecha</th><th>Cruze</th>
+                <th>Productor</th><th>Raza</th><th>Sexo</th><th>Peso</th>
+                <th>Perfil</th><th>Lateral</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in animales %}
+            <tr>
+                <td>{{ a[0] }}</td>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6] }}</td>
+                <td>{{ a[7] }}</td>
+
+                <td>
+                    <img class="animal-img"
+                         src="{{ url_for('imagen_animal', id=a[0], tipo='foto_perfil') }}"
+                         onerror="this.style.display='none'">
+                </td>
+                <td>
+                    <img class="animal-img"
+                         src="{{ url_for('imagen_animal', id=a[0], tipo='foto_lateral') }}"
+                         onerror="this.style.display='none'">
+                </td>
+
+                <td class="actions-cell">
+                    <button type="button" class="btn btn-small btn-ver"
+                        onclick='verAnimal({{ {
+                            "id": a[0], "nombre": a[1], "fecha": a[2], "cruze": a[3],
+                            "productor": a[4], "raza": a[5], "sexo": a[6], "peso": a[7]
+                        } | tojson }})'>
+                        Ver
+                    </button>
+
+                    <button type="button" class="btn btn-small"
+                        onclick='abrirFormEditar({{ {
+                            "id": a[0], "nombre": a[1], "fecha": a[2], "cruze": a[3],
+                            "productor": a[4], "raza": a[5], "sexo": a[6]
+                        } | tojson }})'>
+                        Modificar
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL FORM (Registrar/Modificar) -->
+<div id="modal-form" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-card" role="document">
+        <button type="button" class="close-btn" id="closeFormBtn" aria-label="Cerrar">✕</button>
+        <h3 id="form-titulo">Registrar Animal</h3>
+
+        <!-- el action lo maneja tu backend; method POST -->
+        <form id="form-animal" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="pk" id="f_pk">
+
+            <label for="f_nombre">Nombre:</label>
+            <input type="text" name="nombre" id="f_nombre" required>
+
+            <label for="f_fecha">Fecha de nacimiento:</label>
+            <input type="date" name="fecha" id="f_fecha" required>
+
+            <label for="f_cruze">Cruze:</label>
+            <input type="text" name="cruze" id="f_cruze">
+
+            <!-- productor: si el rol es Productor, mantenlo oculto y con su value -->
+            <label for="f_fk_productor">Productor:</label>
+            {% if session.get('rol') == 'Productor' %}
+                <input type="hidden" name="fk_productor" id="f_fk_productor" value="{{ session.get('fk_productor') }}">
+                <input type="text" value="{% for p in productores %}{% if p[0]==session.get('fk_productor') %}{{ p[1] }}{% endif %}{% endfor %}" readonly>
+            {% else %}
+                <select name="fk_productor" id="f_fk_productor">
+                    <option value="">Seleccione...</option>
+                    {% for p in productores %}
+                        <option value="{{ p[0] }}">{{ p[0] }} - {{ p[1] }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+
+            <!-- RAZA -->
+            <label for="f_raza">Raza:</label>
+            <select name="fk_raza" id="f_raza" required>
+                <option value="">Seleccione...</option>
+                {% for r in razas %}
+                    <option value="{{ r[0] }}">{{ r[1] }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="f_foto_perfil">Foto perfil:</label>
+            <input type="file" name="foto_perfil" id="f_foto_perfil" accept="image/*">
+
+            <label for="f_foto_lateral">Foto lateral:</label>
+            <input type="file" name="foto_lateral" id="f_foto_lateral" accept="image/*">
+
+            <label for="f_sexo">Sexo:</label>
+            <select name="sexo" id="f_sexo" required>
+                <option value="M">Macho</option>
+                <option value="H">Hembra</option>
+            </select>
+
+            <!-- botón que envía la acción que tu backend espera (registrar/modificar) -->
+            <button class="btn" type="submit" name="accion" id="f_accion" value="registrar">Guardar</button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL VER -->
+<div id="modal-ver" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-card" role="document">
+        <button type="button" class="close-btn" id="closeVerBtn" aria-label="Cerrar">✕</button>
+        <h3 id="v_nombre">Animal</h3>
+        <p><strong>ID:</strong> <span id="v_id"></span></p>
+        <p><strong>Fecha Nac.:</strong> <span id="v_fecha"></span></p>
+        <p><strong>Cruze:</strong> <span id="v_cruze"></span></p>
+        <p><strong>Productor:</strong> <span id="v_productor"></span></p>
+        <p><strong>Raza:</strong> <span id="v_raza"></span></p>
+        <p><strong>Sexo:</strong> <span id="v_sexo"></span></p>
+        <p><strong>Peso actual (kg):</strong> <span id="v_peso"></span></p>
+        <div style="margin-top:12px;">
+            <button class="btn" id="verToEditBtn">Modificar</button>
         </div>
     </div>
 </div>
 
 <script>
-function showFloatingDetails(obj) {
-    // aceptar tanto array como objeto
-    if (Array.isArray(obj)) {
-        obj = {
-            id: obj[0], nombre: obj[1], fecha: obj[2], cruze: obj[3],
-            productor: obj[4], raza: obj[5], sexo: obj[6], peso: obj[7]
-        };
+/* ================= util: mostrar/ocultar modales ================= */
+function mostrarModal(idModal) {
+    const modal = document.getElementById(idModal);
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+}
+function ocultarModal(idModal) {
+    const modal = document.getElementById(idModal);
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+/* ================= abrir nuevo ================= */
+document.getElementById('btnNuevo').addEventListener('click', function(){
+    // limpiar form
+    document.getElementById('form-animal').reset();
+    document.getElementById('f_pk').value = '';
+    document.getElementById('f_accion').value = 'registrar';
+    document.getElementById('form-titulo').innerText = 'Registrar Animal';
+    mostrarModal('modal-form');
+});
+
+/* ================= abrir editar con objeto ================= */
+function abrirFormEditar(obj) {
+    if (!obj) return;
+
+    document.getElementById('f_pk').value       = obj.id || '';
+    document.getElementById('f_nombre').value   = obj.nombre || '';
+    document.getElementById('f_fecha').value    = obj.fecha || '';
+    document.getElementById('f_cruze').value    = obj.cruze || '';
+    document.getElementById('f_sexo').value     = obj.sexo || 'M';
+
+    // ✅ PRODUCTOR (por ID)
+    const prodEl = document.getElementById('f_fk_productor');
+    if (prodEl && obj.fk_productor) {
+        prodEl.value = obj.fk_productor;
     }
 
-    const overlay = document.getElementById('floating-details');
-    document.getElementById('float-id').innerText = obj.id || '';
-    document.getElementById('float-nombre').innerText = obj.nombre || '';
-    document.getElementById('float-fecha').innerText = obj.fecha || '';
-    document.getElementById('float-cruze').innerText = obj.cruze || '';
-    document.getElementById('float-productor').innerText = obj.productor || '';
-    document.getElementById('float-raza').innerText = obj.raza || '';
-    document.getElementById('float-sexo').innerText = obj.sexo || '';
-    document.getElementById('float-peso').innerText = obj.peso || '';
+    // ✅ RAZA (por ID)
+    const razaEl = document.getElementById('f_raza');
+    if (razaEl && obj.fk_raza) {
+        razaEl.value = obj.fk_raza;
+    }
 
-    // imágenes desde la ruta conocida
-    document.getElementById('float-perfil').src = '/imagen_animal/' + obj.id + '/foto_perfil';
-    document.getElementById('float-lateral').src = '/imagen_animal/' + obj.id + '/foto_lateral';
+    document.getElementById('f_accion').value = 'modificar';
+    document.getElementById('form-titulo').innerText = 'Modificar Animal';
 
-    // preparar acciones
-    document.getElementById('float-eliminar-pk').value = obj.id;
+    mostrarModal('modal-form');
+}
+/* ================= ver animal (obj) ================= */
+function verAnimal(obj) {
+    if (!obj) return;
+    document.getElementById('v_id').textContent = obj.id || '';
+    document.getElementById('v_nombre').textContent = obj.nombre || '';
+    document.getElementById('v_fecha').textContent = obj.fecha || '';
+    document.getElementById('v_cruze').textContent = obj.cruze || '';
+    document.getElementById('v_productor').textContent = obj.productor || '';
+    document.getElementById('v_raza').textContent = obj.raza || '';
+    document.getElementById('v_sexo').textContent = obj.sexo || '';
+    document.getElementById('v_peso').textContent = obj.peso || '';
+    mostrarModal('modal-ver');
 
-    // modificar: cuando el usuario pulse modificar, cargamos el formulario principal y scrolleamos
-    window._float_mod_obj = obj; // guardamos temporal
-
-    overlay.style.display = 'flex';
-    overlay.setAttribute('aria-hidden', 'false');
+    // botón dentro del modal ver -> abrir editar con mismos datos
+    const verToEditBtn = document.getElementById('verToEditBtn');
+    verToEditBtn.onclick = function () {
+        ocultarModal('modal-ver');
+        abrirFormEditar(obj);
+    };
 }
 
-function closeFloatingDetails() {
-    const overlay = document.getElementById('floating-details');
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden', 'true');
-}
+/* ================= cierres: botones, clic fuera y ESC ================= */
+/* cerrar form */
+document.getElementById('closeFormBtn').addEventListener('click', function(){ ocultarModal('modal-form'); });
+/* cerrar ver */
+document.getElementById('closeVerBtn').addEventListener('click', function(){ ocultarModal('modal-ver'); });
 
-function submitModificarFromFloat() {
-    const obj = window._float_mod_obj || {};
-    // usar la función cargarFormulario existente para rellenar el form principal
-    cargarFormulario(obj.id, obj.nombre, obj.fecha, obj.cruze, obj.productor, obj.raza, obj.sexo);
-    closeFloatingDetails();
-}
-
-// cerrar overlay con ESC
-document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape') closeFloatingDetails();
+/* clic fuera: cerrar si el target es el overlay */
+document.getElementById('modal-form').addEventListener('click', function(e){
+    if (e.target === this) ocultarModal('modal-form');
+});
+document.getElementById('modal-ver').addEventListener('click', function(e){
+    if (e.target === this) ocultarModal('modal-ver');
 });
 
-// cerrar cliqueando fuera de la tarjeta
-document.getElementById('floating-details').addEventListener('click', function(e){
-    if(e.target === this) closeFloatingDetails();
+/* ESC para cerrar */
+document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') {
+        ocultarModal('modal-form');
+        ocultarModal('modal-ver');
+    }
+});
+
+/* ================= mejora: impedir doble submit (opcional) ================= */
+document.getElementById('form-animal').addEventListener('submit', function(e){
+    // deshabilitar botón para evitar doble click
+    const btn = document.getElementById('f_accion');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    // el form continúa su envío normal (POST) al backend
 });
 </script>
-
 
 {% endblock %}

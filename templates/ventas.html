@@ -27,11 +27,55 @@ input, select {
 }
 .btn:hover { background: #6b452e; }
 
-.btn-small { padding: 6px 10px; font-size: 0.8rem; }
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+/* Botón VER */
+.btn-ver {
+    background: #3e6db5;      /* azul */
+}
+.btn-ver:hover {
+    background: #305692;
+}
+
+
+/* ===== CARD VER VENTA ===== */
+.card-venta {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.card-contenido {
+    background: #f5e8d8;
+    padding: 25px;
+    border-radius: 12px;
+    width: 360px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+/* Cabecera de tabla */
+table th {
+    background: #d8c2a8;
+    color: #4a2f16;
+}
+
+/* Primera columna (ID) */
+table td:first-child {
+    background: #f0dbc4;
+    font-weight: bold;
+}
+
+
 </style>
 
 <h2>Gestión de Ventas</h2>
 
+<!-- ===== FORMULARIO ===== -->
 <div class="form-box">
     <h3>Registrar / Modificar Venta</h3>
 
@@ -39,71 +83,59 @@ input, select {
         <input type="hidden" name="pk" id="pk">
 
         <label>Animal:</label>
-        <select name="fk_animal" id="fk_animal">
+        <select name="fk_animal" id="fk_animal" required>
             <option value="">Seleccione...</option>
             {% for a in animales %}
-            <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
+                <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
             {% endfor %}
         </select>
 
         <label>Clave:</label>
         <input type="text" name="clave" id="clave" required>
 
-        <label>Precio Total (automático):</label>
+        <label>Precio Total:</label>
         <input type="number" step="0.01" name="precio" id="precio" readonly required>
 
-        <label>Fecha de venta:</label>
+        <label>Fecha de Venta:</label>
         <input type="date" name="fecha_venta" id="fecha_venta" required>
 
-        <button class="btn" name="accion" value="registrar">Registrar</button>
+        <button class="btn" name="accion" value="registrar" id="btnRegistrar">
+            Registrar
+        </button>
     </form>
 </div>
 
-<script>
-// Cuando seleccionan un animal → calcular precio
-document.getElementById("fk_animal").addEventListener("change", function() {
-    let animalId = this.value;
-
-    if (animalId === "") {
-        document.getElementById("precio").value = "";
-        return;
-    }
-
-    fetch("/calcular_precio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ animal_id: animalId })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById("precio").value = data.precio ?? "";
-    })
-    .catch(err => console.error(err));
-});
-</script>
-
+<!-- ===== TABLA ===== -->
 <div class="table-box">
     <h3>Ventas Registradas</h3>
 
     <table border="1" width="100%" cellpadding="6">
+        <thead>
         <tr>
             <th>ID</th>
             <th>ID Animal</th>
             <th>Clave</th>
-            <th>Precio Total</th>
-            <th>Fecha de Venta</th>
+            <th>Precio</th>
+            <th>Fecha</th>
             <th>Acciones</th>
         </tr>
+        </thead>
 
+        <tbody>
         {% for v in ventas %}
         <tr>
             <td>{{ v[0] }}</td>
             <td>{{ v[1] }}</td>
             <td>{{ v[3] }}</td>
-            <td>{{ v[4] }}</td>
+            <td>${{ v[4] }}</td>
             <td>{{ v[5] }}</td>
 
             <td>
+                <button class="btn btn-small btn-ver"
+                        onclick="verVenta('{{ v[0] }}','{{ v[1] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">
+                    Ver
+                </button>
+
                 <button class="btn btn-small"
                         onclick="cargarFormulario('{{ v[0] }}','{{ v[1] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">
                     Modificar
@@ -111,14 +143,58 @@ document.getElementById("fk_animal").addEventListener("change", function() {
 
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="pk" value="{{ v[0] }}">
-                    <button class="btn btn-small" name="accion" value="eliminar" style="background:#a63c3c;">
+                    <button class="btn btn-small"
+                            style="background:#a63c3c"
+                            name="accion" value="eliminar">
                         Eliminar
                     </button>
                 </form>
             </td>
         </tr>
         {% endfor %}
+        </tbody>
     </table>
 </div>
+
+<!-- ===== CARD VER ===== -->
+<div id="cardVenta" class="card-venta">
+    <div class="card-contenido">
+        <h3>Detalle de la Venta</h3>
+
+        <p><strong>ID Venta:</strong> <span id="v_id"></span></p>
+        <p><strong>ID Animal:</strong> <span id="v_animal"></span></p>
+        <p><strong>Clave:</strong> <span id="v_clave"></span></p>
+        <p><strong>Precio:</strong> $<span id="v_precio"></span></p>
+        <p><strong>Fecha:</strong> <span id="v_fecha"></span></p>
+
+        <button class="btn" onclick="cerrarCard()">Cerrar</button>
+    </div>
+</div>
+
+<!-- ===== JS ===== -->
+<script>
+function cargarFormulario(id, animal, clave, precio, fecha) {
+    pk.value = id;
+    fk_animal.value = animal;
+    clave.value = clave;
+    precio.value = precio;
+    fecha_venta.value = fecha;
+    document.getElementById("btnRegistrar").style.display = "none";
+}
+
+function verVenta(id, animal, clave, precio, fecha) {
+    v_id.textContent = id;
+    v_animal.textContent = animal;
+    v_clave.textContent = clave;
+    v_precio.textContent = precio;
+    v_fecha.textContent = fecha;
+
+    cardVenta.style.display = "flex";
+}
+
+function cerrarCard() {
+    cardVenta.style.display = "none";
+}
+</script>
 
 {% endblock %}

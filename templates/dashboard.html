@@ -141,7 +141,6 @@
         {% elif view == 'comprador' or rol == 'Comprador' %}
             <!-- Menú para Comprador -->
             <a href="{{ url_for('tabla_precio') }}" class="btn-cafe">Tabla de Precios</a>
-            <a href="{{ url_for('ventas') }}" class="btn-cafe">Ventas</a>
             <a href="{{ url_for('album_razas') }}" class="btn-cafe">Guía de Razas</a>
             <a href="{{ url_for('opiniones') }}" class="btn-cafe">Opiniones</a>
         {% else %}
@@ -208,15 +207,6 @@
         </div>
 
 
-        <!-- Mini juego -->
-        <h2 style="margin-top:40px; text-align:center;">Mini-Juego: ¡Evita los obstáculos!</h2>
-
-        <div id="game-area">
-            <img id="cow" src="{{ url_for('static', filename='img/cow.png') }}">
-            <div class="obstacle"></div>
-        </div>
-
-        <div id="score">Puntuación: <span id="scoreValue">0</span></div>
 
     </div>
 </div>
