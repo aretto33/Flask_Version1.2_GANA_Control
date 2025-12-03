@@ -176,22 +176,55 @@ def dashboard():
         return redirect(url_for("login"))
 
     productor_nombre = None
+    aretes = []
+    predios = []
 
-    if session.get("fk_productor"):
+    fk_productor = session.get("fk_productor")
+
+    if fk_productor:
         conn, cursor = conectar_bd()
-        cursor.execute("SELECT nombre FROM Productores WHERE pk_productor=%s", (session["fk_productor"],))
-        row = cursor.fetchone()
-        conn.close()
 
+        # NOMBRE DEL PRODUCTOR
+        cursor.execute("SELECT nombre FROM Productores WHERE pk_productor=%s", (fk_productor,))
+        row = cursor.fetchone()
         if row:
             productor_nombre = row[0]
+
+        # ===========================
+        #   LISTA DE ARETES
+        # ===========================
+        cursor.execute("""
+            SELECT r.arete, a.nombre
+            FROM Registro_SINIGA r
+            INNER JOIN Animales a ON r.fk_animal = a.pk_animal
+            WHERE a.fk_productor = %s
+            ORDER BY r.arete
+        """, (fk_productor,))
+        aretes = cursor.fetchall()
+
+        # ===========================
+        #   LISTA DE PREDIOS
+        # ===========================
+        cursor.execute("""
+            SELECT pk_predio, nom_rancho
+            FROM Predios
+            WHERE fk_productor = %s
+            ORDER BY nom_rancho
+        """, (fk_productor,))
+        predios = cursor.fetchall()
+
+        conn.close()
 
     return render_template(
         "dashboard.html",
         usuario=session["usuario"],
         rol=session["rol"],
-        productor=productor_nombre
+        productor=productor_nombre,
+        aretes=aretes,
+        predios=predios
     )
+
+
 
 
 @app.route("/dashboard_vet")
@@ -659,15 +692,21 @@ def registro_siniga():
     conn, cursor = conectar_bd()
 
     # ----- REGISTRAR -----
+# ----- REGISTRAR -----
     if request.method == "POST" and request.form.get("accion") == "registrar":
         fk_animal = request.form["fk_animal"]
         arete = request.form["arete"]
 
-        cursor.execute("""
-            INSERT INTO Registro_SINIGA (fk_animal, arete)
-            VALUES (%s, %s)
-        """, (fk_animal, arete))
-        conn.commit()
+        try:
+            cursor.execute("""
+                INSERT INTO Registro_SINIGA (fk_animal, arete)
+                VALUES (%s, %s)
+            """, (fk_animal, arete))
+            conn.commit()
+            flash("Registro SIINIGA creado correctamente.", "success")
+
+        except mariadb.IntegrityError:
+            flash("Este animal ya cuenta con un registro SIINIGA.", "warning")
 
     # ----- MODIFICAR -----
     elif request.method == "POST" and request.form.get("accion") == "modificar":
@@ -676,12 +715,21 @@ def registro_siniga():
         arete = request.form["arete"]
 
         cursor.execute("""
-            UPDATE Registro_SINIGA r
-            INNER JOIN Animales a ON r.fk_animal = a.pk_animal
-            SET r.fk_animal = %s, r.arete = %s
-            WHERE r.id = %s AND a.fk_productor = %s
-        """, (fk_animal, arete, pk, fk_productor))
-        conn.commit()
+        SELECT id FROM Registro_SINIGA
+        WHERE fk_animal = %s AND id <> %s
+    """, (fk_animal, pk))
+
+        if cursor.fetchone():
+            flash("Este animal ya tiene otro registro SIINIGA.", "warning")
+        else:
+            cursor.execute("""
+                UPDATE Registro_SINIGA r
+                INNER JOIN Animales a ON r.fk_animal = a.pk_animal
+                SET r.fk_animal = %s, r.arete = %s
+                WHERE r.id = %s AND a.fk_productor = %s
+            """, (fk_animal, arete, pk, fk_productor))
+            conn.commit()
+            flash("Registro SIINIGA modificado correctamente.", "success")
 
     # ----- ELIMINAR -----
     elif request.method == "POST" and request.form.get("accion") == "eliminar":
@@ -1113,7 +1161,8 @@ def tabla_precio():
 @app.route("/opiniones")
 def opiniones():
     return render_template("opiniones.html")
-#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------++
+
 # ---------------- PDF ANIMAL ----------------
 bp = Blueprint('pdf', __name__)
 
@@ -1210,8 +1259,6 @@ def generar_pdf_animal(animal):
         as_attachment=True,
         download_name="datos_animal.pdf"
     )
-
-
 
 
 app.register_blueprint(bp)
