@@ -187,24 +187,41 @@
             </div>
         {% endif %}
 
-        <div id="datos-animal" class="busqueda-overlay">
-            <div class="busqueda-card">
-                <button class="close-btn" onclick="closeDetails()">✕</button>
-                <h4>PDF datos del animal</h4>
-               <form id="datosForm" onsubmit="return false;">
-                    <label>No. Arete</label>
-                    <input type="text" id="detalle-noarete" placeholder="Ej. MX123456">
+<div id="datos-animal" class="busqueda-overlay">
+    <div class="busqueda-card">
+        <button class="close-btn" onclick="closeDetails()">✕</button>
+        <h4>PDF datos del animal</h4>
 
-                    <label>ID Predio</label>
-                    <input type="number" id="detalle-predio" placeholder="Ej. 5">
+        <form id="datosForm" onsubmit="return false;">
 
-                    <button type="button" id="btnDescargarPDF" class="btn-cafe" style="margin-top:10px;">
-                        Descargar PDF
-                    </button>
-                </form>
+            <!-- LISTA DE ARETES -->
+            <label>No. Arete</label>
+            <select id="detalle-noarete" class="form-control">
+                <option value="">-- Selecciona un arete --</option>
+                {% for a in aretes %}
+                <option value="{{ a[0] }}">{{ a[0] }}</option>
+                {% endfor %}
+            </select>
 
-            </div>
-        </div>
+            <!-- LISTA DE PREDIOS -->
+            <label>Predio</label>
+            <select id="detalle-predio" class="form-control">
+                <option value="">-- Selecciona un predio --</option>
+                {% for p in predios %}
+                <option value="{{ p[0] }}">{{ p[1] }} (ID {{ p[0] }})</option>
+
+                {% endfor %}
+            </select>
+
+            <button type="button" id="btnDescargarPDF" class="btn-cafe" style="margin-top:10px;">
+                Descargar PDF
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
 
 
 

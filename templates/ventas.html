@@ -2,13 +2,14 @@
 {% block content %}
 
 <style>
-.form-box, .table-box {
+.table-box {
     background: #f5e8d8;
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 25px;
 }
 
+/* Inputs */
 input, select {
     width: 100%;
     padding: 10px;
@@ -17,10 +18,11 @@ input, select {
     margin-bottom: 12px;
 }
 
+/* Botones */
 .btn {
     background: #8b5e3c;
     color: white;
-    padding: 10px 15px;
+    padding: 10px 14px;
     border-radius: 6px;
     border: none;
     cursor: pointer;
@@ -31,79 +33,58 @@ input, select {
     padding: 6px 10px;
     font-size: 0.8rem;
 }
-/* Botón VER */
+
 .btn-ver {
-    background: #3e6db5;      /* azul */
+    background: #3e6db5;
 }
 .btn-ver:hover {
     background: #305692;
 }
 
-
-/* ===== CARD VER VENTA ===== */
-.card-venta {
+/* ===== CARDS MODALES ===== */
+.card-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,.45);
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 999;
+    z-index: 1000;
 }
 
 .card-contenido {
     background: #f5e8d8;
     padding: 25px;
-    border-radius: 12px;
-    width: 360px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    border-radius: 14px;
+    width: 420px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.35);
 }
-/* Cabecera de tabla */
+
+/* Tabla */
 table th {
     background: #d8c2a8;
     color: #4a2f16;
 }
-
-/* Primera columna (ID) */
 table td:first-child {
     background: #f0dbc4;
     font-weight: bold;
 }
 
-
+.banner {
+        width: 100%;
+        max-width: 1300px;
+        height: auto;
+        display: block;
+        margin: 20px auto;
+        border-radius: 12px;
+    }
 </style>
+<img src="{{ url_for('static', filename='img/5.png') }}" class="banner">
+<h2>Gestión Precios para la venta </h2>
 
-<h2>Gestión de Ventas</h2>
-
-<!-- ===== FORMULARIO ===== -->
-<div class="form-box">
-    <h3>Registrar / Modificar Venta</h3>
-
-    <form method="POST" id="ventaForm">
-        <input type="hidden" name="pk" id="pk">
-
-        <label>Animal:</label>
-        <select name="fk_animal" id="fk_animal" required>
-            <option value="">Seleccione...</option>
-            {% for a in animales %}
-                <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
-            {% endfor %}
-        </select>
-
-        <label>Clave:</label>
-        <input type="text" name="clave" id="clave" required>
-
-        <label>Precio Total:</label>
-        <input type="number" step="0.01" name="precio" id="precio" readonly required>
-
-        <label>Fecha de Venta:</label>
-        <input type="date" name="fecha_venta" id="fecha_venta" required>
-
-        <button class="btn" name="accion" value="registrar" id="btnRegistrar">
-            Registrar
-        </button>
-    </form>
-</div>
+<!-- BOTÓN NUEVA VENTA -->
+<button class="btn" onclick="nuevaVenta()">+ Nueva Venta</button>
+<br><br>
 
 <!-- ===== TABLA ===== -->
 <div class="table-box">
@@ -111,53 +92,85 @@ table td:first-child {
 
     <table border="1" width="100%" cellpadding="6">
         <thead>
-        <tr>
-            <th>ID</th>
-            <th>ID Animal</th>
-            <th>Clave</th>
-            <th>Precio</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
-        </tr>
+            <tr>
+                <th>ID</th>
+                <th>ID Animal</th>
+                <th>Clave</th>
+                <th>Precio</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
         </thead>
-
         <tbody>
         {% for v in ventas %}
-        <tr>
-            <td>{{ v[0] }}</td>
-            <td>{{ v[1] }}</td>
-            <td>{{ v[3] }}</td>
-            <td>${{ v[4] }}</td>
-            <td>{{ v[5] }}</td>
-
-            <td>
-                <button class="btn btn-small btn-ver"
+            <tr>
+                <td>{{ v[0] }}</td>
+                <td>{{ v[1] }}</td>
+                <td>{{ v[3] }}</td>
+                <td>${{ v[4] }}</td>
+                <td>{{ v[5] }}</td>
+                <td>
+                    <button class="btn btn-small btn-ver"
                         onclick="verVenta('{{ v[0] }}','{{ v[1] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">
-                    Ver
-                </button>
-
-                <button class="btn btn-small"
-                        onclick="cargarFormulario('{{ v[0] }}','{{ v[1] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">
-                    Modificar
-                </button>
-
-                <form method="POST" style="display:inline;">
-                    <input type="hidden" name="pk" value="{{ v[0] }}">
-                    <button class="btn btn-small"
-                            style="background:#a63c3c"
-                            name="accion" value="eliminar">
-                        Eliminar
+                        Ver
                     </button>
-                </form>
-            </td>
-        </tr>
+
+                    <button class="btn btn-small"
+                        onclick="cargarFormulario('{{ v[0] }}','{{ v[1] }}','{{ v[3] }}','{{ v[4] }}','{{ v[5] }}')">
+                        Modificar
+                    </button>
+
+                    <form method="POST" style="display:inline">
+                        <input type="hidden" name="pk" value="{{ v[0] }}">
+                        <button class="btn btn-small" style="background:#a63c3c"
+                                name="accion" value="eliminar">
+                            Eliminar
+                        </button>
+                    </form>
+                </td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>
 </div>
 
+<!-- ===== CARD REGISTRAR / MODIFICAR ===== -->
+<div id="cardForm" class="card-modal">
+    <div class="card-contenido">
+        <h3 id="tituloForm">Registrar Venta</h3>
+
+        <form method="POST" id="ventaForm">
+            <input type="hidden" name="pk" id="pk">
+
+            <label>Animal</label>
+            <select name="fk_animal" id="fk_animal" required>
+                <option value="">Seleccione...</option>
+                {% for a in animales %}
+                    <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Clave</label>
+            <input type="text" name="clave" id="clave" required>
+
+            <label>Precio Total</label>
+            <input type="number" step="0.01" name="precio" id="precio" readonly required>
+
+            <label>Fecha de Venta</label>
+            <input type="date" name="fecha_venta" id="fecha_venta" required>
+
+            <button class="btn" name="accion" value="registrar">
+                Guardar
+            </button>
+            <button type="button" class="btn" style="background:#999" onclick="cerrarForm()">
+                Cancelar
+            </button>
+        </form>
+    </div>
+</div>
+
 <!-- ===== CARD VER ===== -->
-<div id="cardVenta" class="card-venta">
+<div id="cardVer" class="card-modal">
     <div class="card-contenido">
         <h3>Detalle de la Venta</h3>
 
@@ -167,34 +180,70 @@ table td:first-child {
         <p><strong>Precio:</strong> $<span id="v_precio"></span></p>
         <p><strong>Fecha:</strong> <span id="v_fecha"></span></p>
 
-        <button class="btn" onclick="cerrarCard()">Cerrar</button>
+        <button class="btn" onclick="cerrarVer()">Cerrar</button>
     </div>
 </div>
 
 <!-- ===== JS ===== -->
 <script>
-function cargarFormulario(id, animal, clave, precio, fecha) {
-    pk.value = id;
-    fk_animal.value = animal;
-    clave.value = clave;
-    precio.value = precio;
-    fecha_venta.value = fecha;
-    document.getElementById("btnRegistrar").style.display = "none";
+const cardForm = document.getElementById("cardForm");
+const cardVer  = document.getElementById("cardVer");
+const fkAnimal = document.getElementById("fk_animal");
+const precioInput = document.getElementById("precio");
+const form = document.getElementById("ventaForm");
+
+// NUEVA VENTA
+function nuevaVenta() {
+    form.reset();
+    pk.value = "";
+    document.getElementById("tituloForm").innerText = "Registrar Venta";
+    cardForm.style.display = "flex";
 }
 
+// MODIFICAR
+function cargarFormulario(id, animal, clave, precio, fecha) {
+    pk.value = id;
+    fkAnimal.value = animal;
+    clave.value = clave;
+    precioInput.value = precio;
+    fecha_venta.value = fecha;
+
+    document.getElementById("tituloForm").innerText = "Modificar Venta";
+    cardForm.style.display = "flex";
+}
+
+// VER
 function verVenta(id, animal, clave, precio, fecha) {
     v_id.textContent = id;
     v_animal.textContent = animal;
     v_clave.textContent = clave;
     v_precio.textContent = precio;
     v_fecha.textContent = fecha;
-
-    cardVenta.style.display = "flex";
+    cardVer.style.display = "flex";
 }
 
-function cerrarCard() {
-    cardVenta.style.display = "none";
-}
+function cerrarForm() { cardForm.style.display = "none"; }
+function cerrarVer() { cardVer.style.display = "none"; }
+
+// CALCULO PRECIO
+fkAnimal.addEventListener("change", () => {
+    if (!fkAnimal.value) return precioInput.value = "";
+    fetch("/calcular_precio", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ animal_id: fkAnimal.value })
+    })
+    .then(r => r.json())
+    .then(d => precioInput.value = d.precio);
+});
+
+// VALIDAR
+form.addEventListener("submit", e => {
+    if (!precioInput.value) {
+        e.preventDefault();
+        alert("Seleccione un animal para calcular el precio");
+    }
+});
 </script>
 
 {% endblock %}

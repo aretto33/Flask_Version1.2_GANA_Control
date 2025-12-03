@@ -1,75 +1,174 @@
 {% extends "base.html" %}
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* Marco 'raro' para imágenes */
-.fancy-frame {
-  position: relative;
-  display: inline-block;
-  border-radius: 14px;
-  padding: 12px;
-  background: linear-gradient(135deg, #fff 0%, #f7efe5 100%);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.12), inset 0 3px 10px rgba(255,255,255,0.6);
-  transition: transform .25s, box-shadow .25s;
-  overflow: hidden;
+/* ===== MARCO ESTILO ===== */
+.fancy-frame{
+  background:linear-gradient(135deg,#fff,#f7efe5);
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 12px 30px rgba(0,0,0,.12);
 }
-.fancy-frame img {
-  display: block;
-  border-radius: 8px;
-  width: 100%;
-  height: auto;
-  transform: rotate(-2deg);
-  transition: transform .25s;
+.fancy-frame img{
+  width:100%;
+  border-radius:10px;
 }
-.fancy-frame:before,
-.fancy-frame:after {
-  content: '';
-  position: absolute;
-  pointer-events: none;
-  border-radius: 14px;
+
+/* ===== LAYOUT PRINCIPAL ===== */
+.opinion-layout{
+  max-width:1200px;
+  margin:40px auto;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:40px;
+  align-items:start;
 }
-.fancy-frame:before {
-  inset: -8px;
-  background: linear-gradient(90deg, rgba(215,179,147,0.10), rgba(215,179,147,0));
-  transform: rotate(-3deg);
-  z-index: -1;
+
+@media(max-width:900px){
+  .opinion-layout{ grid-template-columns:1fr; }
 }
-.fancy-frame:after {
-  width: 48px;
-  height: 48px;
-  right: 8px;
-  bottom: 8px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%);
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.06);
+
+/* ===== GRAFICAS ===== */
+.chart-box{
+  background:#fff;
+  border-radius:14px;
+  padding:20px;
+  box-shadow:0 10px 20px rgba(0,0,0,.1);
+  margin-bottom:25px;
 }
-.fancy-frame:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+.chart-title{
+  font-weight:600;
+  color:#6b3e26;
+  margin-bottom:15px;
+  text-align:center;
 }
-.fancy-frame:hover img { transform: rotate(0deg) scale(1.02); }
-@media (max-width:767.98px) {
-  .fancy-frame { padding: 8px; }
-  .fancy-frame:before { inset: -6px; }
+
+/* ===== COMENTARIO ===== */
+.comment-box{
+  background:#f7efe5;
+  border-radius:14px;
+  padding:18px;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.08);
+}
+.comment-box p{
+  margin:0;
+  color:#4b2f1a;
+}
+.comment-author{
+  text-align:right;
+  margin-top:10px;
+  font-weight:600;
+  color:#8b5e3c;
 }
 </style>
+
+<!-- ===== BANNER ===== -->
 <div class="text-center">
-    <img src="{{ url_for('static', filename='img/banner.png') }}" 
-         class="img-fluid mb-4"
-         style="max-height:200px">
+  <img src="{{ url_for('static', filename='img/banner.png') }}" 
+       class="img-fluid mb-4"
+       style="max-height:200px">
 </div>
 
-<h1 class="fw-bold text-center" style="color:#8b5e3c;">Sus opiniones</h1>
-<div style="max-width:400px; text-align:center;">
-        <div class="fancy-frame mb-3">
-            <img src="{{ url_for('static', filename='img/R.png') }}" 
-                 alt="Principal">
-        </div>
-        <div class="fancy-frame">
-            <img src="{{ url_for('static', filename='img/vaca2.png') }}" 
-                 alt="Vaca">
-        </div>
+<h1 class="fw-bold text-center mb-5" style="color:#8b5e3c;">Sus opiniones</h1>
+
+<!-- ===== CONTENIDO ===== -->
+<div class="opinion-layout">
+
+  <!-- COLUMNA IZQUIERDA -->
+  <div>
+    <div class="fancy-frame mb-4">
+      <img src="{{ url_for('static', filename='img/R.png') }}">
+    </div>
+    <div class="comment-box">
+      <p>
+        “El sistema facilita el control del ganado y permite cumplir
+        más rápido con los trámites oficiales.”
+      </p>
+      <div class="comment-author">
+        — Usuario Ganadero
+      </div>
     </div>
 
+    <div class="fancy-frame">
+      <img src="{{ url_for('static', filename='img/vaca2.png') }}">
+    </div>
+    <div class="comment-box">
+      <p>
+        “Contar con un software así ahorra tiempo, evita errores y
+        mejora el seguimiento del hato.”
+      </p>
+      <div class="comment-author">
+        — Productor Rural
+      </div>
+    </div>
+  </div>
 
+  <!-- COLUMNA DERECHA -->
+  <div>
+
+    <div class="chart-box">
+      <div class="chart-title">
+        ¿Cuál trámite considera más importante en SINIGA?
+      </div>
+      <canvas id="graficaTramite"></canvas>
+    </div>
+
+   
+
+    <div class="chart-box mt-5">
+      <div class="chart-title">
+        ¿Le gustaría un programa que administre y genere documentos SINIGA?
+      </div>
+      <canvas id="graficaPrograma"></canvas>
+    </div>
+
+    
+
+  </div>
+</div>
+
+<!-- ===== GRAFICAS ===== -->
+<script>
+new Chart(document.getElementById('graficaTramite'), {
+  type:'pie',
+  data:{
+    labels:[
+      'Identificación del animal',
+      'Ventas y movilización',
+      'Vacunas y tratamientos'
+    ],
+    datasets:[{
+      data:[40,50,10],
+      backgroundColor:['#8b5e3c','#d4a373','#a98467']
+    }]
+  },
+  options:{
+    responsive:true,
+    maintainAspectRatio:true,
+    plugins:{ legend:{ position:'bottom' } }
+  }
+});
+
+new Chart(document.getElementById('graficaPrograma'), {
+  type:'pie',
+  data:{
+    labels:[
+      'Sí, muy útil',
+      'Tal vez',
+      'No lo necesito'
+    ],
+    datasets:[{
+      data:[50,20,30],
+      backgroundColor:['#7f5539','#b08968','#ddb892']
+    }]
+  },
+  options:{
+    responsive:true,
+    maintainAspectRatio:true,
+    plugins:{ legend:{ position:'bottom' } }
+  }
+});
+</script>
 
 {% endblock %}

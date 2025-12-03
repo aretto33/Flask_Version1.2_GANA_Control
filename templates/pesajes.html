@@ -103,11 +103,19 @@
     cursor:pointer;
     color:#5a3a22;
 }
+.banner {
+        width: 100%;
+        max-width: 1300px;
+        height: auto;
+        display: block;
+        margin: 20px auto;
+        border-radius: 12px;
+    }
 </style>
 
 
 <h2>Gestión de Pesajes</h2>
-
+<img src="{{ url_for('static', filename='img/2.png') }}" class="banner">
 <button class="btn" onclick="abrirForm()">➕ Registrar Pesaje</button>
 
 <!-- ===== TABLA ===== -->

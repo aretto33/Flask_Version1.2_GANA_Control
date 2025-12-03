@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+
 <style>
 /* ===== CONTENEDORES ===== */
 .form-box,
@@ -35,16 +36,12 @@ input, select {
     cursor: pointer;
     font-weight: 600;
 }
-
-.btn:hover {
-    background: #6b452e;
-}
+.btn:hover { background: #6b452e; }
 
 .btn-small {
     padding: 6px 12px;
     font-size: 0.8rem;
 }
-
 .btn-ver {
     background: #4a6fa5;
     color: white;
@@ -52,46 +49,53 @@ input, select {
     border-radius: 8px;
     border: none;
 }
-
-.btn-ver:hover {
-    background: #345984;
-}
+.btn-ver:hover { background: #345984; }
 
 /* ===== TABLA ===== */
 table {
     width: 100%;
     border-collapse: collapse;
 }
-
 th {
     background: #d8c2a8;
     color: #4b2f1a;
 }
+th, td { padding: 10px; }
+tr:hover { background: rgba(0,0,0,0.04); }
 
-th, td {
-    padding: 10px;
-}
-
-tr:hover {
-    background: rgba(0,0,0,0.04);
-}
-/* ===== BORDE CAFE TABLA ===== */
 .table-box table {
-    border: 2px solid #8b5e3c;       /* línea café exterior */
+    border: 2px solid #8b5e3c;
     border-radius: 10px;
-    overflow: hidden;                /* respeta borde redondeado */
+    overflow: hidden;
 }
-
 .table-box th,
 .table-box td {
-    border-bottom: 1px solid #c9b099; /* líneas internas café claro */
+    border-bottom: 1px solid #c9b099;
+}
+.table-box tr:last-child td { border-bottom: none; }
+
+/* ===== ALERTAS ===== */
+.alert{
+    padding:12px 15px;
+    border-radius:8px;
+    margin-bottom:15px;
+    font-weight:600;
+}
+.alert.warning{
+    background:#f9e2c7;
+    color:#6b452e;
+    border:1px solid #e1b98a;
+}
+.alert.error{
+    background:#f2dede;
+    color:#a94442;
+}
+.alert.success{
+    background:#dff0d8;
+    color:#3c763d;
 }
 
-.table-box tr:last-child td {
-    border-bottom: none;
-}
-
-/* ===== OVERLAY ===== */
+/* ===== FLOATING CARD ===== */
 .floating-overlay {
     position: fixed;
     inset: 0;
@@ -101,24 +105,14 @@ tr:hover {
     align-items: center;
     z-index: 9999;
 }
-
-/* ===== TARJETA ===== */
 .floating-card {
     background: #fff;
     width: 95%;
     max-width: 700px;
     border-radius: 16px;
     padding: 24px;
-    animation: slideUp .25s ease;
     box-shadow: 0 14px 35px rgba(0,0,0,.25);
 }
-
-@keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0 }
-    to { transform: translateY(0); opacity: 1 }
-}
-
-/* ===== CERRAR ===== */
 .floating-close {
     float: right;
     font-size: 1.5rem;
@@ -126,11 +120,31 @@ tr:hover {
     background: transparent;
     cursor: pointer;
 }
+
+/* ===== BANNER ===== */
+.banner{
+    width:100%;
+    max-width:1300px;
+    display:block;
+    margin:20px auto;
+    border-radius:12px;
+}
 </style>
 
-<h2>Registro SINIGA</h2>
+<img src="{{ url_for('static', filename='img/6.png') }}" class="banner">
 
-<!-- FORMULARIO -->
+<h2>Registro SIINIGA</h2>
+<p>El registro SINIIGA es el sistema nacional de identificación individual de ganado que asigna un número único e irrepetible a cada animal para garantizar la trazabilidad y seguridad alimentaria. Este registro, que utiliza aretes oficiales, permite rastrear el historial del ganado desde su nacimiento hasta su destino final, facilitando el control sanitario, el acceso a mercados nacionales e internacionales y el manejo productivo. </p>
+<!-- ===== MENSAJES ===== -->
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+{% if mensajes %}
+    {% for cat, msg in mensajes %}
+        <div class="alert {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- ===== FORMULARIO ===== -->
 <div class="form-box">
     <h3>Registrar / Modificar Registro</h3>
 
@@ -141,22 +155,23 @@ tr:hover {
         <select id="fk_animal" name="fk_animal" required>
             <option value="">Seleccione...</option>
             {% for a in animales %}
-            <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
+                <option value="{{ a[0] }}">{{ a[0] }} - {{ a[1] }}</option>
             {% endfor %}
         </select>
 
         <label>Arete</label>
-        <input type="text" id="arete" name="arete" required>
+        <input type="text" id="arete" name="arete">
 
-        <div>
-            <button class="btn" name="accion" value="registrar">Registrar</button>
-        </div>
+        <button class="btn" id="btnAccion" name="accion" value="registrar">
+            Registrar
+        </button>
     </form>
 </div>
 
-<!-- TABLA -->
+<!-- ===== TABLA ===== -->
 <div class="table-box">
     <h3>Registros</h3>
+    <h4>Total: {{ registros|length }}</h4> <!-- Hace el conteo de los registros en la tabla -->
 
     <table>
         <tr>
@@ -182,7 +197,7 @@ tr:hover {
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="pk" value="{{ r[0] }}">
                     <button class="btn btn-small" name="accion" value="eliminar"
-                        style="background:#a63c3c;">
+                        style="background:#a63c3c">
                         Eliminar
                     </button>
                 </form>
@@ -197,12 +212,11 @@ tr:hover {
     </table>
 </div>
 
-<!-- FLOATING CARD -->
+<!-- ===== FLOATING DETAILS ===== -->
 <div id="floating-details" class="floating-overlay">
     <div class="floating-card">
         <button class="floating-close" onclick="closeFloatingDetails()">&times;</button>
-
-        <h3>Detalles del registro</h3>
+        <h3>Detalles del Registro</h3>
         <p><strong>ID:</strong> <span id="float-id"></span></p>
         <p><strong>Animal:</strong> <span id="float-animal"></span></p>
         <p><strong>Nombre:</strong> <span id="float-nombre"></span></p>
@@ -212,19 +226,13 @@ tr:hover {
 
 <script>
 function cargar(id, animal, arete){
-    document.getElementById("pk").value = id;
-    document.getElementById("fk_animal").value = animal;
+    pk.value = id;
+    fk_animal.value = animal;
     document.getElementById("arete").value = arete;
 
-    if (!document.getElementById("btnMod")) {
-        let btn = document.createElement("button");
-        btn.id = "btnMod";
-        btn.className = "btn";
-        btn.name = "accion";
-        btn.value = "modificar";
-        btn.innerText = "Modificar";
-        document.getElementById("formSiniga").appendChild(btn);
-    }
+    const btn = document.getElementById("btnAccion");
+    btn.value = "modificar";
+    btn.innerText = "Modificar";
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -234,7 +242,6 @@ function showFloatingDetails(data){
     document.getElementById("float-animal").innerText = data[1];
     document.getElementById("float-nombre").innerText = data[2];
     document.getElementById("float-arete").innerText = data[3];
-
     document.getElementById("floating-details").style.display = "flex";
 }
 

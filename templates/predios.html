@@ -56,11 +56,19 @@ input,select{
     border:1px solid #bca58b;
     margin-bottom:10px;
 }
+.banner {
+        width: 100%;
+        max-width: 1300px;
+        height: auto;
+        display: block;
+        margin: 20px auto;
+        border-radius: 12px;
+    }
 </style>
-
+<img src="{{ url_for('static', filename='img/1.png') }}" class="banner">
 <h2>Gestión de Predios</h2>
 
-<button class="btn" onclick="abrirForm()"> Registrar Predio</button>
+<button class="btn" onclick="abrirForm()">➕ Registrar Predio</button>
 
 <!-- ===== TABLA ===== -->
 <div class="table-box">
